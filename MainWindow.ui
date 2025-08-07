@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
+   <layout class="QGridLayout" name="gridLayout_6">
     <item row="0" column="0">
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
@@ -22,422 +22,279 @@
       </property>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>4</number>
+        <number>1</number>
        </property>
-       <widget class="QWidget" name="tab">
+       <widget class="QWidget" name="tabScan">
         <attribute name="title">
-         <string>Tab 1</string>
+         <string>Scan</string>
         </attribute>
-        <widget class="QLineEdit" name="pathLineEdit">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>15</y>
-           <width>251</width>
-           <height>21</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="browseButton">
-         <property name="geometry">
-          <rect>
-           <x>270</x>
-           <y>15</y>
-           <width>80</width>
-           <height>21</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Browse</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="scanButton">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>165</y>
-           <width>80</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Scan</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="stopButton">
-         <property name="geometry">
-          <rect>
-           <x>95</x>
-           <y>165</y>
-           <width>80</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Stop</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="clearOutputButton">
-         <property name="geometry">
-          <rect>
-           <x>185</x>
-           <y>165</y>
-           <width>80</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Clear</string>
-         </property>
-        </widget>
-        <widget class="QCheckBox" name="bellOnVirusCheckBox">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>135</y>
-           <width>94</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Bell on Virus</string>
-         </property>
-        </widget>
-        <widget class="QCheckBox" name="removeInfectedCheckBox">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>105</y>
-           <width>119</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Remove Infected</string>
-         </property>
-        </widget>
-        <widget class="QCheckBox" name="moveInfectedCheckBox">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>70</y>
-           <width>105</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Move Infected</string>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="quarantinePathLineEdit">
-         <property name="geometry">
-          <rect>
-           <x>120</x>
-           <y>70</y>
-           <width>226</width>
-           <height>21</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QCheckBox" name="scanArchivesCheckBox">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>40</y>
-           <width>101</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Scan Archives</string>
-         </property>
-        </widget>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="0" column="0" colspan="4">
+          <widget class="QLineEdit" name="pathLineEdit"/>
+         </item>
+         <item row="0" column="4">
+          <widget class="QPushButton" name="browseButton">
+           <property name="text">
+            <string>Browse</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QCheckBox" name="scanArchivesCheckBox">
+           <property name="text">
+            <string>Scan Archives</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QCheckBox" name="moveInfectedCheckBox">
+           <property name="text">
+            <string>Move Infected</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2" colspan="2">
+          <widget class="QLineEdit" name="quarantinePathLineEdit"/>
+         </item>
+         <item row="2" column="4">
+          <widget class="QPushButton" name="browseQuarantineButton">
+           <property name="text">
+            <string>Browse</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0" colspan="3">
+          <widget class="QCheckBox" name="removeInfectedCheckBox">
+           <property name="text">
+            <string>Remove Infected</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0" colspan="2">
+          <widget class="QCheckBox" name="bellOnVirusCheckBox">
+           <property name="text">
+            <string>Bell on Virus</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QCheckBox" name="sudoCheckBox">
+           <property name="text">
+            <string>Run as super user</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QPushButton" name="scanButton">
+           <property name="text">
+            <string>Scan</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1" colspan="2">
+          <widget class="QPushButton" name="stopButton">
+           <property name="text">
+            <string>Stop</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="3">
+          <widget class="QPushButton" name="clearOutputButton">
+           <property name="text">
+            <string>Clear</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
-       <widget class="QWidget" name="tab_2">
+       <widget class="QWidget" name="tabScans">
         <attribute name="title">
-         <string>Tab 2</string>
+         <string>Scans Scheduling</string>
         </attribute>
-        <widget class="QCheckBox" name="enableScanScheduleCheckBox">
-         <property name="geometry">
-          <rect>
-           <x>30</x>
-           <y>30</y>
-           <width>201</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Enable Scan Schedule</string>
-         </property>
-        </widget>
-        <widget class="QComboBox" name="scanFrequencyComboBox">
-         <property name="geometry">
-          <rect>
-           <x>30</x>
-           <y>60</y>
-           <width>141</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <item>
-          <property name="text">
-           <string>Daily</string>
-          </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="enableScanScheduleCheckBox">
+           <property name="text">
+            <string>Enable Scan Schedule</string>
+           </property>
+          </widget>
          </item>
-         <item>
-          <property name="text">
-           <string>Weekly</string>
-          </property>
+         <item row="1" column="0">
+          <widget class="QComboBox" name="scanFrequencyComboBox">
+           <item>
+            <property name="text">
+             <string>Daily</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Weekly</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Monthly</string>
+            </property>
+           </item>
+          </widget>
          </item>
-         <item>
-          <property name="text">
-           <string>Monthly</string>
-          </property>
+         <item row="2" column="0">
+          <widget class="QTimeEdit" name="scanTimeEdit"/>
          </item>
-        </widget>
-        <widget class="QTimeEdit" name="scanTimeEdit">
-         <property name="geometry">
-          <rect>
-           <x>40</x>
-           <y>100</y>
-           <width>131</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="saveScanScheduleButton">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>175</y>
-           <width>81</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Save</string>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="scheduledScanPathLineEdit">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>140</y>
-           <width>236</width>
-           <height>25</height>
-          </rect>
-         </property>
-        </widget>
+         <item row="3" column="0">
+          <widget class="QLineEdit" name="scheduledScanPathLineEdit"/>
+         </item>
+         <item row="3" column="1">
+          <widget class="QPushButton" name="browseScheduledScanPathButton">
+           <property name="text">
+            <string>Browse</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QCheckBox" name="scheduledScanSudoCheckBox">
+           <property name="text">
+            <string>Run as super user</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QPushButton" name="saveScanScheduleButton">
+           <property name="text">
+            <string>Save</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
-       <widget class="QWidget" name="tab_3">
+       <widget class="QWidget" name="tabUpdates">
         <attribute name="title">
-         <string>Page</string>
+         <string>Updates Scheduling</string>
         </attribute>
-        <widget class="QCheckBox" name="enableUpdateScheduleCheckBox">
-         <property name="geometry">
-          <rect>
-           <x>35</x>
-           <y>30</y>
-           <width>201</width>
-           <height>22</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Enable Update Schedule</string>
-         </property>
-        </widget>
-        <widget class="QComboBox" name="updateFrequencyComboBox">
-         <property name="geometry">
-          <rect>
-           <x>30</x>
-           <y>65</y>
-           <width>181</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <item>
-          <property name="text">
-           <string>Daily</string>
-          </property>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0" colspan="2">
+          <widget class="QCheckBox" name="enableUpdateScheduleCheckBox">
+           <property name="text">
+            <string>Enable Update Schedule</string>
+           </property>
+          </widget>
          </item>
-         <item>
-          <property name="text">
-           <string>Weekly</string>
-          </property>
+         <item row="1" column="0" colspan="2">
+          <widget class="QComboBox" name="updateFrequencyComboBox">
+           <item>
+            <property name="text">
+             <string>Daily</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Weekly</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Monthly</string>
+            </property>
+           </item>
+          </widget>
          </item>
-         <item>
-          <property name="text">
-           <string>Monthly</string>
-          </property>
+         <item row="2" column="0" colspan="2">
+          <widget class="QTimeEdit" name="updateTimeEdit"/>
          </item>
-        </widget>
-        <widget class="QTimeEdit" name="updateTimeEdit">
-         <property name="geometry">
-          <rect>
-           <x>30</x>
-           <y>110</y>
-           <width>118</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="saveUpdateScheduleButton">
-         <property name="geometry">
-          <rect>
-           <x>45</x>
-           <y>170</y>
-           <width>81</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Save</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="updateNowButton">
-         <property name="geometry">
-          <rect>
-           <x>140</x>
-           <y>170</y>
-           <width>81</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Update Now</string>
-         </property>
-        </widget>
+         <item row="3" column="0">
+          <widget class="QCheckBox" name="scheduledUpdateSudoCheckBox">
+           <property name="text">
+            <string>Run as super user</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QPushButton" name="saveUpdateScheduleButton">
+           <property name="text">
+            <string>Save</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QPushButton" name="updateNowButton">
+           <property name="text">
+            <string>Update Now</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
-       <widget class="QWidget" name="tab_5">
+       <widget class="QWidget" name="tabExclusions">
         <attribute name="title">
-         <string>Page</string>
+         <string>Exclusions</string>
         </attribute>
-        <widget class="QListWidget" name="exclusionListWidget">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>10</y>
-           <width>221</width>
-           <height>96</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="newExclusionPathLineEdit">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>120</y>
-           <width>216</width>
-           <height>25</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="browseExclusionButton">
-         <property name="geometry">
-          <rect>
-           <x>250</x>
-           <y>125</y>
-           <width>81</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Browse</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="addExclusionButton">
-         <property name="geometry">
-          <rect>
-           <x>240</x>
-           <y>10</y>
-           <width>106</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Add to List</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="removeExclusionButton">
-         <property name="geometry">
-          <rect>
-           <x>240</x>
-           <y>40</y>
-           <width>106</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Remove from List</string>
-         </property>
-        </widget>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0" rowspan="2">
+          <widget class="QListWidget" name="exclusionListWidget"/>
+         </item>
+         <item row="0" column="1">
+          <widget class="QPushButton" name="addExclusionButton">
+           <property name="text">
+            <string>Add to List</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="removeExclusionButton">
+           <property name="text">
+            <string>Remove from List</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLineEdit" name="newExclusionPathLineEdit"/>
+         </item>
+         <item row="2" column="1">
+          <widget class="QPushButton" name="browseExclusionButton">
+           <property name="text">
+            <string>Browse</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
-       <widget class="QWidget" name="tab_4">
+       <widget class="QWidget" name="tabAbout">
         <attribute name="title">
-         <string>Page</string>
+         <string>About</string>
         </attribute>
-        <widget class="QLabel" name="clamavVersionLabel">
-         <property name="geometry">
-          <rect>
-           <x>25</x>
-           <y>5</y>
-           <width>256</width>
-           <height>17</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="signatureVersionLabel">
-         <property name="geometry">
-          <rect>
-           <x>25</x>
-           <y>30</y>
-           <width>236</width>
-           <height>17</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="refreshVersionsButton">
-         <property name="geometry">
-          <rect>
-           <x>270</x>
-           <y>5</y>
-           <width>81</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Refresh</string>
-         </property>
-        </widget>
-        <widget class="QTableWidget" name="scanHistoryTable">
-         <property name="geometry">
-          <rect>
-           <x>30</x>
-           <y>60</y>
-           <width>361</width>
-           <height>106</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="clearHistoryButton">
-         <property name="geometry">
-          <rect>
-           <x>410</x>
-           <y>65</y>
-           <width>81</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Clear</string>
-         </property>
-        </widget>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="1">
+          <widget class="QPushButton" name="refreshVersionsButton">
+           <property name="text">
+            <string>Refresh</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="signatureVersionLabel">
+           <property name="text">
+            <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="clamavVersionLabel">
+           <property name="text">
+            <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="clearHistoryButton">
+           <property name="text">
+            <string>Clear</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QTableWidget" name="scanHistoryTable"/>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QTextEdit" name="outputLog"/>

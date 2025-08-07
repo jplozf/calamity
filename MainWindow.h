@@ -53,8 +53,12 @@ private slots:
 
     // Exclusion related slots
     void on_browseExclusionButton_clicked();
-    void on_addExclusionButton_clicked();
-    void on_removeExclusionButton_clicked();
+    void handleAddExclusionButtonClicked();
+    void handleRemoveExclusionButtonClicked();
+
+    // New browse slots
+    void on_browseQuarantineButton_clicked();
+    void on_browseScheduledScanPathButton_clicked();
 
 protected:
     void closeEvent(QCloseEvent *event) override;

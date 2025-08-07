@@ -54,8 +54,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Connect UI signals to slots (assuming widget names from Qt Designer)
     // User needs to ensure these widget names match their .ui file
-    connect(ui->browseButton, &QPushButton::clicked, this, &MainWindow::on_browseButton_clicked);
-    connect(ui->scanButton, &QPushButton::clicked, this, &MainWindow::on_scanButton_clicked);
     connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::on_stopButton_clicked);
     connect(ui->clearOutputButton, &QPushButton::clicked, this, &MainWindow::on_clearOutputButton_clicked);
     connect(ui->moveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::on_moveInfectedCheckBox_toggled);
@@ -70,9 +68,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->refreshVersionsButton, &QPushButton::clicked, this, &MainWindow::on_refreshVersionsButton_clicked);
 
     // Connect exclusion UI signals to slots
-    connect(ui->browseExclusionButton, &QPushButton::clicked, this, &MainWindow::on_browseExclusionButton_clicked);
-    connect(ui->addExclusionButton, &QPushButton::clicked, this, &MainWindow::on_addExclusionButton_clicked);
-    connect(ui->removeExclusionButton, &QPushButton::clicked, this, &MainWindow::on_removeExclusionButton_clicked);
+    connect(ui->addExclusionButton, &QPushButton::clicked, this, &MainWindow::handleAddExclusionButtonClicked);
+    connect(ui->removeExclusionButton, &QPushButton::clicked, this, &MainWindow::handleRemoveExclusionButtonClicked);
 
     // Connect history UI signals to slots
     connect(ui->clearHistoryButton, &QPushButton::clicked, this, &MainWindow::on_clearHistoryButton_clicked);
@@ -103,6 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
     loadScheduleSettings();
     setupSchedulers();
     loadUiSettings(); // Load UI settings on startup
+    on_moveInfectedCheckBox_toggled(ui->moveInfectedCheckBox->isChecked()); // Update quarantine path line edit state based on loaded setting
     loadExclusionSettings(); // Load exclusion settings on startup
     loadScanHistory(); // Load scan history on startup
 
@@ -163,7 +161,7 @@ void MainWindow::createTrayIcon()
     connect(scanAction, &QAction::triggered, this, &MainWindow::on_actionScan_triggered);
     trayMenu->addAction(scanAction);
 
-    QAction *showHideAction = new QAction(tr("Show/Hide"), this);
+    QAction *showHideAction = new QAction(tr("Show / Hide"), this);
     connect(showHideAction, &QAction::triggered, this, &MainWindow::on_actionShowHide_triggered);
     trayMenu->addAction(showHideAction);
 
@@ -295,7 +293,13 @@ void MainWindow::on_scanButton_clicked()
 
     qDebug() << "Executing clamscan with arguments:" << arguments;
 
-    clamscanProcess->start("clamscan", arguments);
+    QString command = "clamscan";
+    if (ui->sudoCheckBox->isChecked()) {
+        command = "sudo";
+        arguments.prepend("clamscan");
+    }
+
+    clamscanProcess->start(command, arguments);
 
     if (!clamscanProcess->waitForStarted()) {
         QMessageBox::critical(this, tr("Process Error"), tr("Failed to start clamscan process. Make sure clamscan is in your system's PATH."));
@@ -343,8 +347,15 @@ void MainWindow::on_moveInfectedCheckBox_toggled(bool checked)
 // ****************************************************************************
 void MainWindow::readClamscanOutput()
 {
-    ui->outputLog->append(clamscanProcess->readAllStandardOutput());
-    ui->outputLog->append(clamscanProcess->readAllStandardError());
+    QString txt;
+    txt = clamscanProcess->readAllStandardOutput().trimmed();
+    if (txt != "" && txt != "\n" && txt != "\r") {
+        ui->outputLog->append(txt);
+    }
+    txt = clamscanProcess->readAllStandardError().trimmed();
+    if (txt != "" && txt != "\n" && txt != "\r") {
+        ui->outputLog->append(txt);
+    }
 }
 
 // ****************************************************************************
@@ -477,6 +488,32 @@ QStringList MainWindow::buildClamscanArguments()
 }
 
 // ****************************************************************************
+// on_browseQuarantineButton_clicked()
+// ****************************************************************************
+void MainWindow::on_browseQuarantineButton_clicked()
+{
+    QString path = QFileDialog::getExistingDirectory(this, tr("Select Quarantine Directory"),
+                                                 QDir::homePath(),
+                                                 QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (!path.isEmpty()) {
+        ui->quarantinePathLineEdit->setText(path);
+    }
+}
+
+// ****************************************************************************
+// on_browseScheduledScanPathButton_clicked()
+// ****************************************************************************
+void MainWindow::on_browseScheduledScanPathButton_clicked()
+{
+    QString path = QFileDialog::getExistingDirectory(this, tr("Select Directory to Scan"),
+                                                 QDir::homePath(),
+                                                 QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (!path.isEmpty()) {
+        ui->scheduledScanPathLineEdit->setText(path);
+    }
+}
+
+// ****************************************************************************
 // setupSchedulers()
 // ****************************************************************************
 void MainWindow::setupSchedulers()
@@ -496,11 +533,13 @@ void MainWindow::loadScheduleSettings()
     ui->scanFrequencyComboBox->setCurrentText(settings->value("ScanSchedule/Frequency", "Daily").toString());
     ui->scanTimeEdit->setTime(settings->value("ScanSchedule/Time", QTime(3, 0)).toTime());
     ui->scheduledScanPathLineEdit->setText(settings->value("ScanSchedule/Path", QDir::homePath()).toString());
+    ui->scheduledScanSudoCheckBox->setChecked(settings->value("ScanSchedule/Sudo", false).toBool());
 
     // Update Schedule
     ui->enableUpdateScheduleCheckBox->setChecked(settings->value("UpdateSchedule/Enabled", false).toBool());
     ui->updateFrequencyComboBox->setCurrentText(settings->value("UpdateSchedule/Frequency", "Daily").toString());
     ui->updateTimeEdit->setTime(settings->value("UpdateSchedule/Time", QTime(4, 0)).toTime());
+    ui->scheduledUpdateSudoCheckBox->setChecked(settings->value("UpdateSchedule/Sudo", false).toBool());
 }
 
 // ****************************************************************************
@@ -513,11 +552,13 @@ void MainWindow::saveScheduleSettings()
     settings->setValue("ScanSchedule/Frequency", ui->scanFrequencyComboBox->currentText());
     settings->setValue("ScanSchedule/Time", ui->scanTimeEdit->time());
     settings->setValue("ScanSchedule/Path", ui->scheduledScanPathLineEdit->text());
+    settings->setValue("ScanSchedule/Sudo", ui->scheduledScanSudoCheckBox->isChecked());
 
     // Update Schedule
     settings->setValue("UpdateSchedule/Enabled", ui->enableUpdateScheduleCheckBox->isChecked());
     settings->setValue("UpdateSchedule/Frequency", ui->updateFrequencyComboBox->currentText());
     settings->setValue("UpdateSchedule/Time", ui->updateTimeEdit->time());
+    settings->setValue("UpdateSchedule/Sudo", ui->scheduledUpdateSudoCheckBox->isChecked());
 
     settings->sync(); // Ensure settings are written to disk
     updateStatusBar("Schedule settings saved.");
@@ -600,7 +641,12 @@ void MainWindow::runScheduledScan()
     arguments << pathToScan;
 
     qDebug() << "Executing scheduled clamscan with arguments:" << arguments;
-    clamscanProcess->start("clamscan", arguments);
+    QString command = "clamscan";
+    if (ui->scheduledScanSudoCheckBox->isChecked()) {
+        command = "sudo";
+        arguments.prepend("clamscan");
+    }
+    clamscanProcess->start(command, arguments);
 
     // After the first run, set the timer for the next day/week/month
     // For simplicity, this example assumes daily. More complex logic needed for weekly/monthly.
@@ -629,7 +675,12 @@ void MainWindow::runScheduledUpdate()
     qDebug() << "Executing scheduled freshclam.";
     // Note: freshclam usually runs as a daemon or requires specific permissions.
     // Running it directly from the GUI might require elevated privileges.
-    clamscanProcess->start("freshclam", arguments);
+    QString command = "freshclam";
+    if (ui->scheduledUpdateSudoCheckBox->isChecked()) {
+        command = "sudo";
+        arguments.prepend("freshclam");
+    }
+    clamscanProcess->start(command, arguments);
 
     // After the first run, set the timer for the next day/week
     // For simplicity, this example assumes daily. More complex logic needed for weekly.
@@ -685,7 +736,27 @@ void MainWindow::on_refreshVersionsButton_clicked()
 // ****************************************************************************
 void MainWindow::on_updateNowButton_clicked()
 {
-    updateVersionInfo();
+    if (clamscanProcess->state() == QProcess::Running) {
+        qWarning() << "A scan is running. Skipping update.";
+        updateStatusBar("Update skipped: Scan in progress.");
+        return;
+    }
+
+    ui->outputLog->clear();
+    updateStatusBar("Starting update (freshclam)...");
+
+    QStringList arguments;
+    // Add any specific freshclam arguments if needed
+
+    qDebug() << "Executing freshclam.";
+    // Note: freshclam usually runs as a daemon or requires specific permissions.
+    // Running it directly from the GUI might require elevated privileges.
+    QString command = "freshclam";
+    if (ui->scheduledUpdateSudoCheckBox->isChecked()) {
+        command = "sudo";
+        arguments.prepend("freshclam");
+    }
+    clamscanProcess->start(command, arguments);
 }
 
 // ****************************************************************************
@@ -707,9 +778,9 @@ void MainWindow::on_browseExclusionButton_clicked()
 }
 
 // ****************************************************************************
-// on_addExclusionButton_clicked()
+// handleAddExclusionButtonClicked()
 // ****************************************************************************
-void MainWindow::on_addExclusionButton_clicked()
+void MainWindow::handleAddExclusionButtonClicked()
 {
     QString newPath = ui->newExclusionPathLineEdit->text().trimmed();
     if (!newPath.isEmpty() && !exclusionPaths.contains(newPath)) {
@@ -726,9 +797,9 @@ void MainWindow::on_addExclusionButton_clicked()
 }
 
 // ****************************************************************************
-// on_removeExclusionButton_clicked()
+// handleRemoveExclusionButtonClicked()
 // ****************************************************************************
-void MainWindow::on_removeExclusionButton_clicked()
+void MainWindow::handleRemoveExclusionButtonClicked()
 {
     QListWidgetItem *item = ui->exclusionListWidget->currentItem();
     if (item) {
@@ -757,6 +828,18 @@ void MainWindow::saveUiSettings()
         settings->setValue("splitterSizes", ui->splitter->saveState());
     }
     settings->endGroup();
+
+    // Save Manual Scan Settings
+    settings->beginGroup("ManualScan");
+    settings->setValue("path", ui->pathLineEdit->text());
+    settings->setValue("scanArchives", ui->scanArchivesCheckBox->isChecked());
+    settings->setValue("moveInfected", ui->moveInfectedCheckBox->isChecked());
+    settings->setValue("quarantinePath", ui->quarantinePathLineEdit->text());
+    settings->setValue("removeInfected", ui->removeInfectedCheckBox->isChecked());
+    settings->setValue("bellOnVirus", ui->bellOnVirusCheckBox->isChecked());
+    settings->setValue("sudo", ui->sudoCheckBox->isChecked());
+    settings->endGroup();
+
     settings->sync();
 }
 
@@ -774,6 +857,17 @@ void MainWindow::loadUiSettings()
     if (ui->splitter) {
         ui->splitter->restoreState(settings->value("splitterSizes").toByteArray());
     }
+    settings->endGroup();
+
+    // Load Manual Scan Settings
+    settings->beginGroup("ManualScan");
+    ui->pathLineEdit->setText(settings->value("path", QDir::homePath()).toString());
+    ui->scanArchivesCheckBox->setChecked(settings->value("scanArchives", false).toBool());
+    ui->moveInfectedCheckBox->setChecked(settings->value("moveInfected", false).toBool());
+    ui->quarantinePathLineEdit->setText(settings->value("quarantinePath", "").toString());
+    ui->removeInfectedCheckBox->setChecked(settings->value("removeInfected", false).toBool());
+    ui->bellOnVirusCheckBox->setChecked(settings->value("bellOnVirus", false).toBool());
+    ui->sudoCheckBox->setChecked(settings->value("sudo", false).toBool());
     settings->endGroup();
 }
 
@@ -969,3 +1063,5 @@ void MainWindow::updateVersionInfo()
         qWarning() << "Could not parse Signature version from clamscan output:" << clamavOutput;
     }
 }
+
+
