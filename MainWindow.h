@@ -60,6 +60,16 @@ private slots:
     void on_browseQuarantineButton_clicked();
     void on_browseScheduledScanPathButton_clicked();
 
+    // New slots for scan options
+    void on_recursiveScanCheckBox_toggled(bool checked);
+    void on_heuristicAlertsCheckBox_toggled(bool checked);
+    void on_encryptedDocumentsAlertsCheckBox_toggled(bool checked);
+
+    // New slots for scheduled scan options
+    void on_scheduledRecursiveScanCheckBox_toggled(bool checked);
+    void on_scheduledHeuristicAlertsCheckBox_toggled(bool checked);
+    void on_scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked);
+
 protected:
     void closeEvent(QCloseEvent *event) override;
 
@@ -73,7 +83,16 @@ private:
     QSettings *settings;
     QProcess *versionCheckProcess;
 
+    // New member variables to store scan options state
+    bool m_recursiveScanEnabled;
+    bool m_heuristicAlertsEnabled;
+    bool m_encryptedDocumentsAlertsEnabled;
+    bool m_scheduledRecursiveScanEnabled;
+    bool m_scheduledHeuristicAlertsEnabled;
+    bool m_scheduledEncryptedDocumentsAlertsEnabled;
+
     // Version Info Labels (assuming these are in .ui file)
+    QLabel *appVersionLabel;
     QLabel *clamavVersionLabel;
     QLabel *signatureVersionLabel;
 

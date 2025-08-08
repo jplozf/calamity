@@ -36,9 +36,12 @@ MainWindow::MainWindow(QWidget *parent)
     , updateSchedulerTimer(nullptr)
     , settings(nullptr)
     , versionCheckProcess(nullptr)
+    , m_recursiveScanEnabled(false)
+    , m_heuristicAlertsEnabled(false)
+    , m_encryptedDocumentsAlertsEnabled(false)
 {
     ui->setupUi(this);
-    setWindowTitle("Calamity"); // Set the window title
+    setWindowTitle(QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
     setStyleSheet(
         "QMainWindow, QWidget, QFrame { background-color: #FADA5E; }"); // Set background color to Naples' yellow for main window and panels
 
@@ -51,12 +54,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clamscanProcess, &QProcess::readyReadStandardError, this, &MainWindow::readClamscanOutput);
     connect(clamscanProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::clamscanFinished);
     connect(clamscanProcess, &QProcess::errorOccurred, this, &MainWindow::clamscanErrorOccurred);
-
-    // Connect UI signals to slots (assuming widget names from Qt Designer)
-    // User needs to ensure these widget names match their .ui file
-    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::on_stopButton_clicked);
-    connect(ui->clearOutputButton, &QPushButton::clicked, this, &MainWindow::on_clearOutputButton_clicked);
-    connect(ui->moveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::on_moveInfectedCheckBox_toggled);
 
     // Connect scheduling UI signals to slots
     connect(ui->saveScanScheduleButton, &QPushButton::clicked, this, &MainWindow::on_saveScanScheduleButton_clicked);
@@ -105,6 +102,7 @@ MainWindow::MainWindow(QWidget *parent)
     loadScanHistory(); // Load scan history on startup
 
     // Initialize QLabel pointers (assuming they exist in .ui file)
+    appVersionLabel = ui->appVersionLabel;
     clamavVersionLabel = ui->clamavVersionLabel;
     signatureVersionLabel = ui->signatureVersionLabel;
 
@@ -454,7 +452,7 @@ QStringList MainWindow::buildClamscanArguments()
     QStringList arguments;
 
     // Add common arguments for better output
-    arguments << "--stdout" << "--no-summary"; // Ensure output goes to stdout and no summary
+    arguments << "--stdout"; // Ensure output goes to stdout
 
     if (ui->scanArchivesCheckBox->isChecked()) {
         arguments << "--scan-archive";
@@ -476,13 +474,23 @@ QStringList MainWindow::buildClamscanArguments()
         arguments << "--bell";
     }
 
+    // Add new scan options
+    if (ui->recursiveScanCheckBox->isChecked()) {
+        arguments << "--recursive";
+    }
+    if (ui->heuristicAlertsCheckBox->isChecked()) {
+        arguments << "--heuristic-alerts";
+    }
+    if (ui->encryptedDocumentsAlertsCheckBox->isChecked()) {
+        arguments << "--alert-encrypted=yes";
+    } else {
+        arguments << "--alert-encrypted=no";
+    }
+
     // Add exclusion paths
     for (const QString &path : qAsConst(exclusionPaths)) {
         arguments << "--exclude=" + path;
     }
-
-    // Add other desired clamscan options here based on your UI
-    // Example: arguments << "--recursive"; // Always scan directories recursively
 
     return arguments;
 }
@@ -514,6 +522,26 @@ void MainWindow::on_browseScheduledScanPathButton_clicked()
 }
 
 // ****************************************************************************
+// New Scan Option Slots
+// ****************************************************************************
+void MainWindow::on_recursiveScanCheckBox_toggled(bool checked)
+{
+    m_recursiveScanEnabled = checked;
+}
+
+void MainWindow::on_heuristicAlertsCheckBox_toggled(bool checked)
+{
+    m_heuristicAlertsEnabled = checked;
+}
+
+void MainWindow::on_encryptedDocumentsAlertsCheckBox_toggled(bool checked)
+{
+    m_encryptedDocumentsAlertsEnabled = checked;
+}
+
+
+
+// ****************************************************************************
 // setupSchedulers()
 // ****************************************************************************
 void MainWindow::setupSchedulers()
@@ -534,6 +562,9 @@ void MainWindow::loadScheduleSettings()
     ui->scanTimeEdit->setTime(settings->value("ScanSchedule/Time", QTime(3, 0)).toTime());
     ui->scheduledScanPathLineEdit->setText(settings->value("ScanSchedule/Path", QDir::homePath()).toString());
     ui->scheduledScanSudoCheckBox->setChecked(settings->value("ScanSchedule/Sudo", false).toBool());
+    ui->scheduledRecursiveScanCheckBox->setChecked(settings->value("ScanSchedule/RecursiveScan", false).toBool());
+    ui->scheduledHeuristicAlertsCheckBox->setChecked(settings->value("ScanSchedule/HeuristicAlerts", false).toBool());
+    ui->scheduledEncryptedDocumentsAlertsCheckBox->setChecked(settings->value("ScanSchedule/EncryptedDocumentsAlerts", false).toBool());
 
     // Update Schedule
     ui->enableUpdateScheduleCheckBox->setChecked(settings->value("UpdateSchedule/Enabled", false).toBool());
@@ -553,6 +584,9 @@ void MainWindow::saveScheduleSettings()
     settings->setValue("ScanSchedule/Time", ui->scanTimeEdit->time());
     settings->setValue("ScanSchedule/Path", ui->scheduledScanPathLineEdit->text());
     settings->setValue("ScanSchedule/Sudo", ui->scheduledScanSudoCheckBox->isChecked());
+    settings->setValue("ScanSchedule/RecursiveScan", ui->scheduledRecursiveScanCheckBox->isChecked());
+    settings->setValue("ScanSchedule/HeuristicAlerts", ui->scheduledHeuristicAlertsCheckBox->isChecked());
+    settings->setValue("ScanSchedule/EncryptedDocumentsAlerts", ui->scheduledEncryptedDocumentsAlertsCheckBox->isChecked());
 
     // Update Schedule
     settings->setValue("UpdateSchedule/Enabled", ui->enableUpdateScheduleCheckBox->isChecked());
@@ -638,6 +672,17 @@ void MainWindow::runScheduledScan()
     QStringList arguments;
     arguments << "--stdout" << "--no-summary";
     // Add other desired clamscan options for scheduled scans here
+    if (ui->scheduledRecursiveScanCheckBox->isChecked()) {
+        arguments << "--recursive";
+    }
+    if (ui->scheduledHeuristicAlertsCheckBox->isChecked()) {
+        arguments << "--heuristic-alerts";
+    }
+    if (ui->scheduledEncryptedDocumentsAlertsCheckBox->isChecked()) {
+        arguments << "--alert-encrypted=yes";
+    } else {
+        arguments << "--alert-encrypted=no";
+    }
     arguments << pathToScan;
 
     qDebug() << "Executing scheduled clamscan with arguments:" << arguments;
@@ -838,6 +883,9 @@ void MainWindow::saveUiSettings()
     settings->setValue("removeInfected", ui->removeInfectedCheckBox->isChecked());
     settings->setValue("bellOnVirus", ui->bellOnVirusCheckBox->isChecked());
     settings->setValue("sudo", ui->sudoCheckBox->isChecked());
+    settings->setValue("recursiveScan", ui->recursiveScanCheckBox->isChecked());
+    settings->setValue("heuristicAlerts", ui->heuristicAlertsCheckBox->isChecked());
+    settings->setValue("encryptedDocumentsAlerts", ui->encryptedDocumentsAlertsCheckBox->isChecked());
     settings->endGroup();
 
     settings->sync();
@@ -868,8 +916,15 @@ void MainWindow::loadUiSettings()
     ui->removeInfectedCheckBox->setChecked(settings->value("removeInfected", false).toBool());
     ui->bellOnVirusCheckBox->setChecked(settings->value("bellOnVirus", false).toBool());
     ui->sudoCheckBox->setChecked(settings->value("sudo", false).toBool());
+    ui->recursiveScanCheckBox->setChecked(settings->value("recursiveScan", false).toBool());
+    ui->heuristicAlertsCheckBox->setChecked(settings->value("heuristicAlerts", false).toBool());
+    ui->encryptedDocumentsAlertsCheckBox->setChecked(settings->value("encryptedDocumentsAlerts", false).toBool());
     settings->endGroup();
+
+    settings->sync();
 }
+
+
 
 // ****************************************************************************
 // loadExclusionSettings()
@@ -1033,6 +1088,11 @@ void MainWindow::updateVersionInfo()
         return;
     }
 
+    // Display Application Version
+    if (ui->appVersionLabel) {
+        ui->appVersionLabel->setText(QString("Calamity Version: %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
+    }
+
     // Clear previous info
     if (clamavVersionLabel) clamavVersionLabel->setText(tr("ClamAV Version: Fetching..."));
     if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: Fetching..."));
@@ -1062,6 +1122,21 @@ void MainWindow::updateVersionInfo()
         if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: Not Found"));
         qWarning() << "Could not parse Signature version from clamscan output:" << clamavOutput;
     }
+}
+
+void MainWindow::on_scheduledRecursiveScanCheckBox_toggled(bool checked)
+{
+    m_scheduledRecursiveScanEnabled = checked;
+}
+
+void MainWindow::on_scheduledHeuristicAlertsCheckBox_toggled(bool checked)
+{
+    m_scheduledHeuristicAlertsEnabled = checked;
+}
+
+void MainWindow::on_scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked)
+{
+    m_scheduledEncryptedDocumentsAlertsEnabled = checked;
 }
 
 
