@@ -119,6 +119,7 @@ private:
 
     // Scan History related slots
     void clearHistoryButtonClicked();
+    void on_scanHistoryTable_cellDoubleClicked(int row, int column);
 
     // Structure to hold scan results
     struct ScanResult {

@@ -22,6 +22,8 @@
 #include <QJsonObject>   // For JSON objects
 #include <QJsonArray>    // For JSON arrays
 #include <QFile>         // For file operations
+#include <QDesktopServices> // For opening files
+#include <QUrl>             // For opening files
 
 // ****************************************************************************
 // MainWindow()
@@ -103,6 +105,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->addExclusionButton, &QPushButton::clicked, this, &MainWindow::handleAddExclusionButtonClicked);
     connect(ui->removeExclusionButton, &QPushButton::clicked, this, &MainWindow::handleRemoveExclusionButtonClicked);
     connect(ui->browseExclusionButton, &QPushButton::clicked, this, &MainWindow::browseExclusionButtonClicked);
+
+    // Connect scan history table double click
+    connect(ui->scanHistoryTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::on_scanHistoryTable_cellDoubleClicked);
 
     // Initial UI state
     ui->stopButton->setEnabled(false);
@@ -1267,3 +1272,49 @@ void MainWindow::updateScanStatusLed(bool scanning)
         scanStatusLed->setPixmap(ledGrayPixmap);
     }
 }
+
+// ****************************************************************************
+// on_scanHistoryTable_cellDoubleClicked()
+// ****************************************************************************
+void MainWindow::on_scanHistoryTable_cellDoubleClicked(int row, int column)
+{
+    Q_UNUSED(column); // Column is not used in this slot
+
+    if (row < 0 || row >= scanHistory.size()) {
+        qWarning() << "Double clicked row out of bounds:" << row;
+        return;
+    }
+
+    // Retrieve the timestamp from the clicked row (assuming it's in column 0)
+    QTableWidgetItem *timestampItem = ui->scanHistoryTable->item(row, 0);
+    if (!timestampItem) {
+        qWarning() << "Could not retrieve timestamp item from row:" << row;
+        return;
+    }
+
+    // The timestamp in the table is formatted as "yyyy-MM-dd hh:mm:ss"
+    // The filename is "yyyy-MM-dd_hh-mm-ss.zip"
+    QString timestampStr = timestampItem->text();
+    QDateTime timestamp = QDateTime::fromString(timestampStr, "yyyy-MM-dd hh:mm:ss");
+
+    if (!timestamp.isValid()) {
+        qWarning() << "Invalid timestamp format in table:" << timestampStr;
+        QMessageBox::warning(this, tr("Error"), tr("Could not parse timestamp from selected row."));
+        return;
+    }
+
+    QString reportFileName = timestamp.toString("yyyy-MM-dd_hh-mm-ss") + ".zip";
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+    QString reportFilePath = scansDirPath + "/" + reportFileName;
+
+    QFile file(reportFilePath);
+    if (file.exists()) {
+        qDebug() << "Opening report file:" << reportFilePath;
+        QDesktopServices::openUrl(QUrl::fromLocalFile(reportFilePath));
+    } else {
+        qWarning() << "Report file not found:" << reportFilePath;
+        QMessageBox::warning(this, tr("File Not Found"),
+                             tr("The corresponding scan report could not be found at:\n%1").arg(reportFilePath));
+    }
+}
+
