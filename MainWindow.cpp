@@ -24,6 +24,9 @@
 #include <QFile>         // For file operations
 #include <QDesktopServices> // For opening files
 #include <QUrl>             // For opening files
+#include <QMimeData>        // For drag and drop
+#include <QDragEnterEvent>  // For drag and drop
+#include <QDropEvent>       // For drag and drop
 
 // ****************************************************************************
 // MainWindow()
@@ -48,6 +51,9 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
     setStyleSheet(
         "QMainWindow, QWidget, QFrame { background-color: #FADA5E; }"); // Set background color to Naples' yellow for main window and panels
+
+    // Enable drag and drop for the outputLog
+    ui->outputLog->setAcceptDrops(true);
 
     // Initialize LED pixmaps
     ledGreenPixmap = QPixmap(":/icons/led_green.png");
@@ -1385,6 +1391,35 @@ void MainWindow::on_scanHistoryTable_cellDoubleClicked(int row, int column)
         qWarning() << "Report file not found:" << reportFilePath;
         QMessageBox::warning(this, tr("File Not Found"),
                              tr("The corresponding scan report could not be found at:\n%1").arg(reportFilePath));
+    }
+}
+
+// ****************************************************************************
+// dragEnterEvent()
+// ****************************************************************************
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    }
+}
+
+// ****************************************************************************
+// dropEvent()
+// ****************************************************************************
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    if (event->mimeData()->hasUrls()) {
+        for (const QUrl &url : event->mimeData()->urls()) {
+            QString localPath = url.toLocalFile();
+            if (!localPath.isEmpty()) {
+                // Set the pathLineEdit text and trigger a scan
+                ui->pathLineEdit->setText(localPath);
+                scanButton_clicked();
+                break; // Only scan the first dropped item for simplicity
+            }
+        }
+        event->acceptProposedAction();
     }
 }
 
