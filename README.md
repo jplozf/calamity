@@ -17,6 +17,7 @@ Calamity is a graphical user interface (GUI) for the ClamAV antivirus engine, wr
 ## Screenshots
 
 ![Calamity Screenshot](icons/screenshot_01.png)
+![Calamity Screenshot](icons/screenshot_02.png)
 
 ## Prerequisites
 
