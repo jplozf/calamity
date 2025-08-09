@@ -39,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_recursiveScanEnabled(false)
     , m_heuristicAlertsEnabled(false)
     , m_encryptedDocumentsAlertsEnabled(false)
+    , m_logFile(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle(QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
@@ -156,22 +157,26 @@ void MainWindow::createTrayIcon()
     trayMenu = new QMenu(this);
 
     QAction *scanAction = new QAction(tr("Scan Now"), this);
+    scanAction->setIcon(QIcon(":/icons/Search.png"));
     connect(scanAction, &QAction::triggered, this, &MainWindow::on_actionScan_triggered);
     trayMenu->addAction(scanAction);
 
     QAction *showHideAction = new QAction(tr("Show / Hide"), this);
+    showHideAction->setIcon(QIcon(":/icons/Application.png"));
     connect(showHideAction, &QAction::triggered, this, &MainWindow::on_actionShowHide_triggered);
     trayMenu->addAction(showHideAction);
 
     trayMenu->addSeparator();
 
     QAction *quitAction = new QAction(tr("Quit"), this);
+    quitAction->setIcon(QIcon(":/icons/Cancel.png"));
     connect(quitAction, &QAction::triggered, this, &MainWindow::on_actionQuit_triggered);
     trayMenu->addAction(quitAction);
 
     trayIcon->setContextMenu(trayMenu);
     trayIcon->setIcon(QIcon(":/icons/app_icon.png")); // You need to add an icon resource
-    trayIcon->setToolTip("Calamity");
+    trayIcon->setToolTip(
+        QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
 
     connect(trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::on_trayIcon_activated);
 
@@ -188,12 +193,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     saveScanHistory(); // Save scan history before closing
     if (trayIcon->isVisible()) {
         hide();
-        /*
-        trayIcon->showMessage("Calamity",
-                              tr("Application minimized to tray."),
-                              QSystemTrayIcon::Information,
-                              2000);
-        */
         event->ignore();
     } else {
         event->accept();
@@ -281,8 +280,17 @@ void MainWindow::on_scanButton_clicked()
         return;
     }
 
+    // Create a temporary file to store the scan log
+    m_logFile = new QTemporaryFile(this);
+    if (!m_logFile->open()) {
+        QMessageBox::critical(this, tr("File Error"), tr("Failed to create temporary log file."));
+        delete m_logFile;
+        m_logFile = nullptr;
+        return;
+    }
+
     ui->outputLog->clear();
-    updateStatusBar("Starting scan...");
+    updateStatusBar("Scan started...");
     ui->scanButton->setEnabled(false);
     ui->stopButton->setEnabled(true);
 
@@ -312,6 +320,11 @@ void MainWindow::on_scanButton_clicked()
 // ****************************************************************************
 void MainWindow::on_stopButton_clicked()
 {
+    if (m_logFile) {
+        m_logFile->close();
+        delete m_logFile;
+        m_logFile = nullptr;
+    }
     if (clamscanProcess->state() == QProcess::Running) {
         clamscanProcess->terminate(); // Try to terminate gracefully
         if (!clamscanProcess->waitForFinished(3000)) { // Wait up to 3 seconds
@@ -345,15 +358,17 @@ void MainWindow::on_moveInfectedCheckBox_toggled(bool checked)
 // ****************************************************************************
 void MainWindow::readClamscanOutput()
 {
-    QString txt;
-    txt = clamscanProcess->readAllStandardOutput().trimmed();
-    if (txt != "" && txt != "\n" && txt != "\r") {
-        ui->outputLog->append(txt);
+    QString output = clamscanProcess->readAllStandardOutput();
+    if (!output.isEmpty() && m_logFile) {
+        m_logFile->write(output.toUtf8());
     }
-    txt = clamscanProcess->readAllStandardError().trimmed();
-    if (txt != "" && txt != "\n" && txt != "\r") {
-        ui->outputLog->append(txt);
+    ui->outputLog->append(output.trimmed());
+
+    QString errorOutput = clamscanProcess->readAllStandardError();
+    if (!errorOutput.isEmpty() && m_logFile) {
+        m_logFile->write(errorOutput.toUtf8());
     }
+    ui->outputLog->append(errorOutput.trimmed());
 }
 
 // ****************************************************************************
@@ -363,6 +378,35 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     Q_UNUSED(exitStatus); // Not using exitStatus directly, but keeping for signature
 
+    if (m_logFile) {
+        m_logFile->seek(0);
+        QByteArray logData = m_logFile->readAll();
+        m_logFile->close();
+        delete m_logFile;
+        m_logFile = nullptr;
+
+        if (!logData.isEmpty()) {
+            QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+            QDir scansDir(scansDirPath);
+            if (!scansDir.exists()) {
+                scansDir.mkpath(".");
+            }
+
+            QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
+            QString logFileName = QString("%1.zip").arg(timestamp);
+            QString logFilePath = scansDirPath + "/" + logFileName;
+
+            QFile compressedLogFile(logFilePath);
+            if (compressedLogFile.open(QIODevice::WriteOnly)) {
+                compressedLogFile.write(qCompress(logData));
+                compressedLogFile.close();
+                qDebug() << "Scan log saved to:" << logFilePath;
+            } else {
+                qWarning() << "Could not save compressed scan log to:" << logFilePath;
+            }
+        }
+    }
+
     QString statusMessage;
     QString scanStatus;
     int threats = 0;
@@ -370,6 +414,10 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
     if (exitCode == 0) {
         statusMessage = "Scan finished: No threats found.";
         scanStatus = "Clean";
+        trayIcon->showMessage("Calamity",
+                              tr("Scan finished.\nNo threats found."),
+                              QSystemTrayIcon::Information,
+                              2000);
     } else if (exitCode == 1) {
         statusMessage = "Scan finished: Threats found!";
         scanStatus = "Threats Found";
@@ -380,14 +428,25 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
         if (threatsMatch.hasMatch()) {
             threats = threatsMatch.captured(1).toInt();
         }
+        trayIcon->showMessage("Calamity",
+                              tr("Scan finished.\nThreats found."),
+                              QSystemTrayIcon::Critical,
+                              2000);
     } else if (exitCode == 2) {
         statusMessage = "Scan finished: Error occurred.";
         scanStatus = "Error";
+        trayIcon->showMessage("Calamity",
+                              tr("Scan finished.\nError occured."),
+                              QSystemTrayIcon::Warning,
+                              2000);
     } else {
         statusMessage = QString("Scan finished with exit code: %1").arg(exitCode);
         scanStatus = "Unknown Error";
+        trayIcon->showMessage("Calamity",
+                              tr("Scan finished.\nUnknown error."),
+                              QSystemTrayIcon::Warning,
+                              2000);
     }
-    trayIcon->showMessage("Calamity", tr("Scan finished."), QSystemTrayIcon::Information, 2000);
     updateStatusBar(statusMessage);
 
     // Add to scan history
@@ -399,11 +458,17 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
     ui->stopButton->setEnabled(false);
 }
 
+
 // ****************************************************************************
 // clamscanErrorOccurred()
 // ****************************************************************************
 void MainWindow::clamscanErrorOccurred(QProcess::ProcessError error)
 {
+    if (m_logFile) {
+        m_logFile->close();
+        delete m_logFile;
+        m_logFile = nullptr;
+    }
     QString errorMessage;
     switch (error) {
     case QProcess::FailedToStart:
@@ -452,7 +517,7 @@ QStringList MainWindow::buildClamscanArguments()
     QStringList arguments;
 
     // Add common arguments for better output
-    arguments << "--stdout"; // Ensure output goes to stdout
+    arguments << "--stdout" << "-i"; // Ensure output goes to stdout and report only infected files
 
     if (ui->scanArchivesCheckBox->isChecked()) {
         arguments << "--scan-archive";
@@ -667,10 +732,12 @@ void MainWindow::runScheduledScan()
     }
 
     ui->outputLog->clear();
-    updateStatusBar("Starting scheduled scan...");
-
+    ui->outputLog->append("Scheduled scan started at "
+                          + QTime::currentTime().toString("yyyy-MM-dd hh:mm:ss"));
+    updateStatusBar("Scheduled scan started...");
     QStringList arguments;
-    arguments << "--stdout" << "--no-summary";
+    // arguments << "--stdout" << "--no-summary";
+    arguments << "--stdout" << "-i"; // Report only infected files
     // Add other desired clamscan options for scheduled scans here
     if (ui->scheduledRecursiveScanCheckBox->isChecked()) {
         arguments << "--recursive";
@@ -712,7 +779,7 @@ void MainWindow::runScheduledUpdate()
     }
 
     ui->outputLog->clear();
-    updateStatusBar("Starting scheduled update (freshclam)...");
+    updateStatusBar("Scheduled update started...");
 
     QStringList arguments;
     // Add any specific freshclam arguments if needed
@@ -788,7 +855,7 @@ void MainWindow::on_updateNowButton_clicked()
     }
 
     ui->outputLog->clear();
-    updateStatusBar("Starting update (freshclam)...");
+    updateStatusBar("Update started...");
 
     QStringList arguments;
     // Add any specific freshclam arguments if needed

@@ -10,6 +10,7 @@
 #include <QSettings> // For saving/loading settings
 #include <QSystemTrayIcon>
 #include <QTimer> // For scheduling
+#include <QTemporaryFile>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -82,11 +83,10 @@ private:
     QTimer *updateSchedulerTimer;
     QSettings *settings;
     QProcess *versionCheckProcess;
-
-    // New member variables to store scan options state
     bool m_recursiveScanEnabled;
     bool m_heuristicAlertsEnabled;
     bool m_encryptedDocumentsAlertsEnabled;
+    QTemporaryFile *m_logFile;
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;
