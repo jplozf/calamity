@@ -11,6 +11,7 @@ Calamity is a graphical user interface (GUI) for the ClamAV antivirus engine, wr
 *   Shows ClamAV engine and virus database versions.
 *   Cancel ongoing scans.
 *   Simple, clean, and intuitive user interface.
+*   Drag-and-drop files/folders onto the output log to initiate a scan.
 
 ## Screenshots
 
@@ -53,9 +54,10 @@ Before you begin, ensure you have met the following requirements:
 
 1.  Launch the Calamity application.
 2.  Click the "Scan File" or "Scan Directory" button to select what you want to scan.
-3.  The scan will start, and the progress will be displayed in the output window.
-4.  If any threats are found, they will be listed in the results table.
-5.  You can stop the scan at any time by clicking the "Cancel" button.
+3.  Alternatively, drag and drop files or folders directly onto the output log panel to start a scan.
+4.  The scan will start, and the progress will be displayed in the output window.
+5.  If any threats are found, they will be listed in the results table.
+6.  You can stop the scan at any time by clicking the "Cancel" button.
 
 ## To-Do
 

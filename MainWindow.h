@@ -79,8 +79,9 @@ private slots:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
-    void dragEnterEvent(QDragEnterEvent *event) override;
-    void dropEvent(QDropEvent *event) override;
+
+private slots:
+    void handleFileDropped(const QString &path);
 
 private:
     Ui::MainWindow *ui;

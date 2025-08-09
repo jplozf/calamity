@@ -24,9 +24,6 @@
 #include <QFile>         // For file operations
 #include <QDesktopServices> // For opening files
 #include <QUrl>             // For opening files
-#include <QMimeData>        // For drag and drop
-#include <QDragEnterEvent>  // For drag and drop
-#include <QDropEvent>       // For drag and drop
 
 // ****************************************************************************
 // MainWindow()
@@ -51,9 +48,6 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
     setStyleSheet(
         "QMainWindow, QWidget, QFrame { background-color: #FADA5E; }"); // Set background color to Naples' yellow for main window and panels
-
-    // Enable drag and drop for the outputLog
-    ui->outputLog->setAcceptDrops(true);
 
     // Initialize LED pixmaps
     ledGreenPixmap = QPixmap(":/icons/led_green.png");
@@ -119,6 +113,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Connect scan history table double click
     connect(ui->scanHistoryTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::on_scanHistoryTable_cellDoubleClicked);
+
+    // Connect fileDropped signal from custom QTextEdit
+    connect(ui->outputLog, &ScanOutputTextEdit::fileDropped, this, &MainWindow::handleFileDropped);
 
     // Initial UI state
     ui->stopButton->setEnabled(false);
@@ -317,7 +314,9 @@ void MainWindow::browseButton_clicked()
 // ****************************************************************************
 void MainWindow::scanButton_clicked()
 {
+    qDebug() << "scanButton_clicked() called.";
     QString pathToScan = ui->pathLineEdit->text();
+    qDebug() << "Path to scan from pathLineEdit:" << pathToScan;
     if (pathToScan.isEmpty()) {
         QMessageBox::warning(this, tr("Input Error"), tr("Please select a file or directory to scan."));
         return;
@@ -339,8 +338,9 @@ void MainWindow::scanButton_clicked()
 
     ui->outputLog->clear();
     ui->outputLog
-        ->append("Scan started at " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+        ->append(QString("Scan of '%1' started at %2").arg(pathToScan, QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss")));
     updateStatusBar("Scan in progress...");
+    updateScanStatusLed(true); // Explicitly set LED to green when scan starts
     ui->scanButton->setEnabled(false);
     ui->stopButton->setEnabled(true);
 
@@ -1395,31 +1395,17 @@ void MainWindow::on_scanHistoryTable_cellDoubleClicked(int row, int column)
 }
 
 // ****************************************************************************
-// dragEnterEvent()
+// handleFileDropped()
 // ****************************************************************************
-void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+void MainWindow::handleFileDropped(const QString &path)
 {
-    if (event->mimeData()->hasUrls()) {
-        event->acceptProposedAction();
-    }
+    qDebug() << "File dropped signal received in MainWindow:" << path;
+    ui->pathLineEdit->setText(path);
+    ui->outputLog->clear();
+    ui->outputLog->append(QString("Scanning: %1").arg(path));
+    QApplication::processEvents(); // Force UI update
+    scanButton_clicked();
 }
 
-// ****************************************************************************
-// dropEvent()
-// ****************************************************************************
-void MainWindow::dropEvent(QDropEvent *event)
-{
-    if (event->mimeData()->hasUrls()) {
-        for (const QUrl &url : event->mimeData()->urls()) {
-            QString localPath = url.toLocalFile();
-            if (!localPath.isEmpty()) {
-                // Set the pathLineEdit text and trigger a scan
-                ui->pathLineEdit->setText(localPath);
-                scanButton_clicked();
-                break; // Only scan the first dropped item for simplicity
-            }
-        }
-        event->acceptProposedAction();
-    }
-}
+
 

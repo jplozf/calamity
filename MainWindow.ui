@@ -637,7 +637,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QTextEdit" name="outputLog"/>
+      <widget class="ScanOutputTextEdit" name="outputLog"/>
      </widget>
     </item>
    </layout>
@@ -658,4 +658,12 @@
   <include location="calamity.qrc"/>
  </resources>
  <connections/>
+ <customwidgets>
+  <customwidget>
+   <class>ScanOutputTextEdit</class>
+   <extends>QTextEdit</extends>
+   <header>ScanOutputTextEdit.h</header>
+  </customwidget>
+ </customwidgets>
 </ui>
+     

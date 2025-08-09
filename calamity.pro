@@ -18,10 +18,12 @@ DEFINES += "GIT_COMMIT_COUNT=\\\"\"$$GIT_COMMIT_COUNT\\\"\""
 
 SOURCES += \
     main.cpp \
-    MainWindow.cpp
+    MainWindow.cpp \
+    ScanOutputTextEdit.cpp
 
 HEADERS += \
-    MainWindow.h
+    MainWindow.h \
+    ScanOutputTextEdit.h
 
 FORMS += \
     MainWindow.ui
