@@ -266,6 +266,48 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="scheduledScanArchivesCheckBox">
+             <property name="text">
+              <string>Scan Archives</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="scheduledBellOnVirusCheckBox">
+             <property name="text">
+              <string>Bell on Virus</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_16">
+             <item>
+              <widget class="QCheckBox" name="scheduledMoveInfectedCheckBox">
+               <property name="text">
+                <string>Move Infected to</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="scheduledQuarantinePathLineEdit"/>
+             </item>
+             <item>
+              <widget class="QPushButton" name="browseScheduledQuarantineButton">
+               <property name="text">
+                <string>Browse</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="scheduledRemoveInfectedCheckBox">
+             <property name="text">
+              <string>Remove Infected</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <spacer name="verticalSpacer_2">
              <property name="orientation">
               <enum>Qt::Vertical</enum>

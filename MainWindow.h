@@ -71,6 +71,11 @@ private slots:
     void scheduledRecursiveScanCheckBox_toggled(bool checked);
     void scheduledHeuristicAlertsCheckBox_toggled(bool checked);
     void scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked);
+    void scheduledScanArchivesCheckBox_toggled(bool checked);
+    void scheduledBellOnVirusCheckBox_toggled(bool checked);
+    void scheduledMoveInfectedCheckBox_toggled(bool checked);
+    void scheduledRemoveInfectedCheckBox_toggled(bool checked);
+    void browseScheduledQuarantineButtonClicked();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -91,6 +96,10 @@ private:
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;
+    bool m_scheduledScanArchivesEnabled;
+    bool m_scheduledBellOnVirusEnabled;
+    bool m_scheduledMoveInfectedEnabled;
+    bool m_scheduledRemoveInfectedEnabled;
 
     // Version Info Labels (assuming these are in .ui file)
     QLabel *appVersionLabel;
