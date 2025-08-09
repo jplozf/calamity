@@ -29,6 +29,7 @@ public:
     ~MainWindow();
 
 private slots:
+    void updateScanStatusLed(bool scanning);
     void browseButton_clicked();
     void scanButton_clicked();
     void stopButton_clicked();
@@ -95,6 +96,10 @@ private:
     QLabel *appVersionLabel;
     QLabel *clamavVersionLabel;
     QLabel *signatureVersionLabel;
+
+    QPixmap ledGreenPixmap;
+    QPixmap ledGrayPixmap;
+    QLabel *scanStatusLed;
 
     QStringList exclusionPaths; // New: To store exclusion paths
 

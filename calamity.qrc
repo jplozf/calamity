@@ -206,5 +206,7 @@
         <file>icons/Write3.png</file>
         <file>icons/Zoom In.png</file>
         <file>icons/Zoom Out.png</file>
+        <file>icons/led_green.png</file>
+        <file>icons/led_gray.png</file>
     </qresource>
 </RCC>

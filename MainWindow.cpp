@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , clamscanProcess(nullptr)
+    , scanStatusLed(nullptr)
     , trayIcon(nullptr)
     , trayMenu(nullptr)
     , scanSchedulerTimer(nullptr)
@@ -46,6 +47,17 @@ MainWindow::MainWindow(QWidget *parent)
     setStyleSheet(
         "QMainWindow, QWidget, QFrame { background-color: #FADA5E; }"); // Set background color to Naples' yellow for main window and panels
 
+    // Initialize LED pixmaps
+    ledGreenPixmap = QPixmap(":/icons/led_green.png");
+    ledGrayPixmap = QPixmap(":/icons/led_gray.png");
+
+    // Initialize scanStatusLed and add to status bar
+    scanStatusLed = new QLabel(this);
+    scanStatusLed->setFixedSize(16, 16); // Set fixed size for the LED
+    scanStatusLed->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    scanStatusLed->setPixmap(ledGrayPixmap); // Initial state: grayed out
+    ui->statusbar->addPermanentWidget(scanStatusLed);
+
     // Initialize QProcess
     clamscanProcess = new QProcess(this);
     versionCheckProcess = new QProcess(this);
@@ -55,6 +67,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clamscanProcess, &QProcess::readyReadStandardError, this, &MainWindow::readClamscanOutput);
     connect(clamscanProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::clamscanFinished);
     connect(clamscanProcess, &QProcess::errorOccurred, this, &MainWindow::clamscanErrorOccurred);
+
+    // Connect LED status updates
+    connect(ui->scanButton, &QPushButton::clicked, this, [this]() { updateScanStatusLed(true); });
+    connect(ui->stopButton, &QPushButton::clicked, this, [this]() { updateScanStatusLed(false); });
+    connect(clamscanProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this](int, QProcess::ExitStatus) { updateScanStatusLed(false); });
+    connect(clamscanProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) { updateScanStatusLed(false); });
 
     // Connect UI signals to slots
     connect(ui->scanButton, &QPushButton::clicked, this, &MainWindow::scanButton_clicked);
@@ -764,6 +782,7 @@ void MainWindow::runScheduledScan()
     ui->outputLog->append("Scheduled scan started at "
                           + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
     updateStatusBar("Scheduled scan in progress...");
+    updateScanStatusLed(true);
     QStringList arguments;
     // arguments << "--stdout" << "--no-summary";
     arguments << "--stdout" << "-i"; // Report only infected files
@@ -1141,7 +1160,7 @@ void MainWindow::saveScanHistory()
 void MainWindow::displayScanHistory()
 {
     ui->scanHistoryTable->setRowCount(0); // Clear existing rows
-    qDebug() << "Displaying scan history. Number of entries:" << scanHistory.size();
+    qDebug() << "Displaying scan history. Number of entries::" << scanHistory.size();
     for (const ScanResult &result : qAsConst(scanHistory)) {
         int row = ui->scanHistoryTable->rowCount();
         ui->scanHistoryTable->insertRow(row);
@@ -1233,4 +1252,16 @@ void MainWindow::scheduledHeuristicAlertsCheckBox_toggled(bool checked)
 void MainWindow::scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked)
 {
     m_scheduledEncryptedDocumentsAlertsEnabled = checked;
+}
+
+// ****************************************************************************
+// updateScanStatusLed()
+// ****************************************************************************
+void MainWindow::updateScanStatusLed(bool scanning)
+{
+    if (scanning) {
+        scanStatusLed->setPixmap(ledGreenPixmap);
+    } else {
+        scanStatusLed->setPixmap(ledGrayPixmap);
+    }
 }
