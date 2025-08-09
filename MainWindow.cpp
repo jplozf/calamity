@@ -1167,7 +1167,9 @@ void MainWindow::displayScanHistory()
         ui->scanHistoryTable->setItem(row, 0, new QTableWidgetItem(result.timestamp.toString("yyyy-MM-dd hh:mm:ss")));
         ui->scanHistoryTable->setItem(row, 1, new QTableWidgetItem(result.scannedPath));
         ui->scanHistoryTable->setItem(row, 2, new QTableWidgetItem(result.status));
-        ui->scanHistoryTable->setItem(row, 3, new QTableWidgetItem(QString::number(result.threatsFound)));
+        QTableWidgetItem *qtwThreats = new QTableWidgetItem(QString::number(result.threatsFound));
+        qtwThreats->setTextAlignment(Qt::AlignCenter);
+        ui->scanHistoryTable->setItem(row, 3, qtwThreats);
 
         qDebug() << "Added row:" << result.timestamp.toString("yyyy-MM-dd hh:mm:ss")
                  << result.scannedPath << result.status << result.threatsFound;
