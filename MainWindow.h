@@ -29,47 +29,47 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_browseButton_clicked();
-    void on_scanButton_clicked();
-    void on_stopButton_clicked();
-    void on_clearOutputButton_clicked();
-    void on_moveInfectedCheckBox_toggled(bool checked);
+    void browseButton_clicked();
+    void scanButton_clicked();
+    void stopButton_clicked();
+    void clearOutputButton_clicked();
+    void moveInfectedCheckBox_toggled(bool checked);
     void readClamscanOutput();
     void clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void clamscanErrorOccurred(QProcess::ProcessError error);
 
     // System Tray related slots
-    void on_trayIcon_activated(QSystemTrayIcon::ActivationReason reason);
-    void on_actionShowHide_triggered();
-    void on_actionQuit_triggered();
-    void on_actionScan_triggered(); // To trigger scan from tray menu
+    void trayIconActivated(QSystemTrayIcon::ActivationReason reason);
+    void showHideActionTriggered();
+    void quitActionTriggered();
+    void scanActionTriggered(); // To trigger scan from tray menu
 
     // Scheduling related slots
-    void on_saveScanScheduleButton_clicked();
-    void on_saveUpdateScheduleButton_clicked();
-    void on_scanSchedulerTimer_timeout();
-    void on_updateSchedulerTimer_timeout();
-    void on_updateNowButton_clicked(); // Manual update button slot
-    void on_refreshVersionsButton_clicked(); // Refresh versions button slot
+    void saveScanScheduleButtonClicked();
+    void saveUpdateScheduleButtonClicked();
+    void scanSchedulerTimerTimeout();
+    void updateSchedulerTimerTimeout();
+    void updateNowButtonClicked(); // Manual update button slot
+    void refreshVersionsButtonClicked(); // Refresh versions button slot
 
     // Exclusion related slots
-    void on_browseExclusionButton_clicked();
+    void browseExclusionButtonClicked();
     void handleAddExclusionButtonClicked();
     void handleRemoveExclusionButtonClicked();
 
     // New browse slots
-    void on_browseQuarantineButton_clicked();
-    void on_browseScheduledScanPathButton_clicked();
+    void browseQuarantineButtonClicked();
+    void browseScheduledScanPathButtonClicked();
 
     // New slots for scan options
-    void on_recursiveScanCheckBox_toggled(bool checked);
-    void on_heuristicAlertsCheckBox_toggled(bool checked);
-    void on_encryptedDocumentsAlertsCheckBox_toggled(bool checked);
+    void recursiveScanCheckBox_toggled(bool checked);
+    void heuristicAlertsCheckBox_toggled(bool checked);
+    void encryptedDocumentsAlertsCheckBox_toggled(bool checked);
 
     // New slots for scheduled scan options
-    void on_scheduledRecursiveScanCheckBox_toggled(bool checked);
-    void on_scheduledHeuristicAlertsCheckBox_toggled(bool checked);
-    void on_scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked);
+    void scheduledRecursiveScanCheckBox_toggled(bool checked);
+    void scheduledHeuristicAlertsCheckBox_toggled(bool checked);
+    void scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -113,7 +113,7 @@ private:
     void updateVersionInfo();
 
     // Scan History related slots
-    void on_clearHistoryButton_clicked();
+    void clearHistoryButtonClicked();
 
     // Structure to hold scan results
     struct ScanResult {

@@ -56,21 +56,35 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clamscanProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::clamscanFinished);
     connect(clamscanProcess, &QProcess::errorOccurred, this, &MainWindow::clamscanErrorOccurred);
 
+    // Connect UI signals to slots
+    connect(ui->scanButton, &QPushButton::clicked, this, &MainWindow::scanButton_clicked);
+    connect(ui->browseButton, &QPushButton::clicked, this, &MainWindow::browseButton_clicked);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::stopButton_clicked);
+    connect(ui->clearOutputButton, &QPushButton::clicked, this, &MainWindow::clearOutputButton_clicked);
+    connect(ui->moveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::moveInfectedCheckBox_toggled);
+    connect(ui->clearHistoryButton, &QPushButton::clicked, this, &MainWindow::clearHistoryButtonClicked);
+    connect(ui->browseQuarantineButton, &QPushButton::clicked, this, &MainWindow::browseQuarantineButtonClicked);
+    connect(ui->browseScheduledScanPathButton, &QPushButton::clicked, this, &MainWindow::browseScheduledScanPathButtonClicked);
+    connect(ui->recursiveScanCheckBox, &QCheckBox::toggled, this, &MainWindow::recursiveScanCheckBox_toggled);
+    connect(ui->heuristicAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::heuristicAlertsCheckBox_toggled);
+    connect(ui->encryptedDocumentsAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::encryptedDocumentsAlertsCheckBox_toggled);
+    connect(ui->scheduledRecursiveScanCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledRecursiveScanCheckBox_toggled);
+    connect(ui->scheduledHeuristicAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledHeuristicAlertsCheckBox_toggled);
+    connect(ui->scheduledEncryptedDocumentsAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledEncryptedDocumentsAlertsCheckBox_toggled);
+
     // Connect scheduling UI signals to slots
-    connect(ui->saveScanScheduleButton, &QPushButton::clicked, this, &MainWindow::on_saveScanScheduleButton_clicked);
-    connect(ui->saveUpdateScheduleButton, &QPushButton::clicked, this, &MainWindow::on_saveUpdateScheduleButton_clicked);
+    connect(ui->saveScanScheduleButton, &QPushButton::clicked, this, &MainWindow::saveScanScheduleButtonClicked);
+    connect(ui->saveUpdateScheduleButton, &QPushButton::clicked, this, &MainWindow::saveUpdateScheduleButtonClicked);
     connect(ui->updateNowButton,
             &QPushButton::clicked,
             this,
-            &MainWindow::on_updateNowButton_clicked);
-    connect(ui->refreshVersionsButton, &QPushButton::clicked, this, &MainWindow::on_refreshVersionsButton_clicked);
+            &MainWindow::updateNowButtonClicked);
+    connect(ui->refreshVersionsButton, &QPushButton::clicked, this, &MainWindow::refreshVersionsButtonClicked);
 
     // Connect exclusion UI signals to slots
     connect(ui->addExclusionButton, &QPushButton::clicked, this, &MainWindow::handleAddExclusionButtonClicked);
     connect(ui->removeExclusionButton, &QPushButton::clicked, this, &MainWindow::handleRemoveExclusionButtonClicked);
-
-    // Connect history UI signals to slots
-    connect(ui->clearHistoryButton, &QPushButton::clicked, this, &MainWindow::on_clearHistoryButton_clicked);
+    connect(ui->browseExclusionButton, &QPushButton::clicked, this, &MainWindow::browseExclusionButtonClicked);
 
     // Initial UI state
     ui->stopButton->setEnabled(false);
@@ -92,13 +106,13 @@ MainWindow::MainWindow(QWidget *parent)
     }
     settings = new QSettings(settingsDirPath + "/settings.ini", QSettings::IniFormat, this);
 
-    connect(scanSchedulerTimer, &QTimer::timeout, this, &MainWindow::on_scanSchedulerTimer_timeout);
-    connect(updateSchedulerTimer, &QTimer::timeout, this, &MainWindow::on_updateSchedulerTimer_timeout);
+    connect(scanSchedulerTimer, &QTimer::timeout, this, &MainWindow::scanSchedulerTimerTimeout);
+    connect(updateSchedulerTimer, &QTimer::timeout, this, &MainWindow::updateSchedulerTimerTimeout);
 
     loadScheduleSettings();
     setupSchedulers();
     loadUiSettings(); // Load UI settings on startup
-    on_moveInfectedCheckBox_toggled(ui->moveInfectedCheckBox->isChecked()); // Update quarantine path line edit state based on loaded setting
+    moveInfectedCheckBox_toggled(ui->moveInfectedCheckBox->isChecked()); // Update quarantine path line edit state based on loaded setting
     loadExclusionSettings(); // Load exclusion settings on startup
     loadScanHistory(); // Load scan history on startup
 
@@ -158,19 +172,19 @@ void MainWindow::createTrayIcon()
 
     QAction *scanAction = new QAction(tr("Scan Now"), this);
     scanAction->setIcon(QIcon(":/icons/Search.png"));
-    connect(scanAction, &QAction::triggered, this, &MainWindow::on_actionScan_triggered);
+    connect(scanAction, &QAction::triggered, this, &MainWindow::scanActionTriggered);
     trayMenu->addAction(scanAction);
 
     QAction *showHideAction = new QAction(tr("Show / Hide"), this);
     showHideAction->setIcon(QIcon(":/icons/Application.png"));
-    connect(showHideAction, &QAction::triggered, this, &MainWindow::on_actionShowHide_triggered);
+    connect(showHideAction, &QAction::triggered, this, &MainWindow::showHideActionTriggered);
     trayMenu->addAction(showHideAction);
 
     trayMenu->addSeparator();
 
     QAction *quitAction = new QAction(tr("Quit"), this);
     quitAction->setIcon(QIcon(":/icons/Cancel.png"));
-    connect(quitAction, &QAction::triggered, this, &MainWindow::on_actionQuit_triggered);
+    connect(quitAction, &QAction::triggered, this, &MainWindow::quitActionTriggered);
     trayMenu->addAction(quitAction);
 
     trayIcon->setContextMenu(trayMenu);
@@ -178,7 +192,7 @@ void MainWindow::createTrayIcon()
     trayIcon->setToolTip(
         QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
 
-    connect(trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::on_trayIcon_activated);
+    connect(trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::trayIconActivated);
 
     trayIcon->show();
 }
@@ -200,9 +214,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 // ****************************************************************************
-// on_trayIcon_activated()
+// trayIconActivated()
 // ****************************************************************************
-void MainWindow::on_trayIcon_activated(QSystemTrayIcon::ActivationReason reason)
+void MainWindow::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::DoubleClick) {
         // Restore the window if it's hidden, otherwise hide it
@@ -217,9 +231,9 @@ void MainWindow::on_trayIcon_activated(QSystemTrayIcon::ActivationReason reason)
 }
 
 // ****************************************************************************
-// on_actionShowHide_triggered()
+// showHideActionTriggered()
 // ****************************************************************************
-void MainWindow::on_actionShowHide_triggered()
+void MainWindow::showHideActionTriggered()
 {
     if (this->isHidden()) {
         this->showNormal();
@@ -231,25 +245,25 @@ void MainWindow::on_actionShowHide_triggered()
 }
 
 // ****************************************************************************
-// on_actionQuit_triggered()
+// quitActionTriggered()
 // ****************************************************************************
-void MainWindow::on_actionQuit_triggered()
+void MainWindow::quitActionTriggered()
 {
     QApplication::quit();
 }
 
 // ****************************************************************************
-// on_actionScan_triggered()
+// scanActionTriggered()
 // ****************************************************************************
-void MainWindow::on_actionScan_triggered()
+void MainWindow::scanActionTriggered()
 {
-    on_scanButton_clicked(); // Reuse the existing scan logic
+    scanButton_clicked(); // Reuse the existing scan logic
 }
 
 // ****************************************************************************
-// on_browseButton_clicked()
+// browseButton_clicked()
 // ****************************************************************************
-void MainWindow::on_browseButton_clicked()
+void MainWindow::browseButton_clicked()
 {
     QString path = QFileDialog::getExistingDirectory(this, tr("Select Directory to Scan"),
                                                  QDir::homePath(),
@@ -265,9 +279,9 @@ void MainWindow::on_browseButton_clicked()
 }
 
 // ****************************************************************************
-// on_scanButton_clicked()
+// scanButton_clicked()
 // ****************************************************************************
-void MainWindow::on_scanButton_clicked()
+void MainWindow::scanButton_clicked()
 {
     QString pathToScan = ui->pathLineEdit->text();
     if (pathToScan.isEmpty()) {
@@ -290,7 +304,9 @@ void MainWindow::on_scanButton_clicked()
     }
 
     ui->outputLog->clear();
-    updateStatusBar("Scan started...");
+    ui->outputLog
+        ->append("Scan started at " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+    updateStatusBar("Scan in progress...");
     ui->scanButton->setEnabled(false);
     ui->stopButton->setEnabled(true);
 
@@ -316,9 +332,9 @@ void MainWindow::on_scanButton_clicked()
 }
 
 // ****************************************************************************
-// on_stopButton_clicked()
+// stopButton_clicked()
 // ****************************************************************************
-void MainWindow::on_stopButton_clicked()
+void MainWindow::stopButton_clicked()
 {
     if (m_logFile) {
         m_logFile->close();
@@ -337,18 +353,18 @@ void MainWindow::on_stopButton_clicked()
 }
 
 // ****************************************************************************
-// on_clearOutputButton_clicked()
+// clearOutputButton_clicked()
 // ****************************************************************************
-void MainWindow::on_clearOutputButton_clicked()
+void MainWindow::clearOutputButton_clicked()
 {
     ui->outputLog->clear();
     updateStatusBar("Output cleared.");
 }
 
 // ****************************************************************************
-// on_moveInfectedCheckBox_toggled()
+// moveInfectedCheckBox_toggled()
 // ****************************************************************************
-void MainWindow::on_moveInfectedCheckBox_toggled(bool checked)
+void MainWindow::moveInfectedCheckBox_toggled(bool checked)
 {
     ui->quarantinePathLineEdit->setEnabled(checked);
 }
@@ -386,23 +402,36 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
         m_logFile = nullptr;
 
         if (!logData.isEmpty()) {
-            QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
-            QDir scansDir(scansDirPath);
-            if (!scansDir.exists()) {
-                scansDir.mkpath(".");
-            }
+            QString reportPath = QDir::tempPath() + "/report.txt";
+            QFile reportFile(reportPath);
+            if (reportFile.open(QIODevice::WriteOnly)) {
+                reportFile.write(logData);
+                reportFile.close();
 
-            QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
-            QString logFileName = QString("%1.zip").arg(timestamp);
-            QString logFilePath = scansDirPath + "/" + logFileName;
+                QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+                QDir scansDir(scansDirPath);
+                if (!scansDir.exists()) {
+                    scansDir.mkpath(".");
+                }
 
-            QFile compressedLogFile(logFilePath);
-            if (compressedLogFile.open(QIODevice::WriteOnly)) {
-                compressedLogFile.write(qCompress(logData));
-                compressedLogFile.close();
-                qDebug() << "Scan log saved to:" << logFilePath;
+                QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
+                QString zipFileName = QString("%1.zip").arg(timestamp);
+                QString zipFilePath = scansDirPath + "/" + zipFileName;
+
+                QProcess zipProcess;
+                zipProcess.start("zip", QStringList() << "-j" << zipFilePath << reportPath);
+                zipProcess.waitForFinished(-1);
+
+                if (zipProcess.exitCode() == 0) {
+                    qDebug() << "Scan log saved to:" << zipFilePath;
+                } else {
+                    qWarning() << "Could not save compressed scan log to:" << zipFilePath;
+                    qWarning() << "zip process error:" << zipProcess.readAllStandardError();
+                }
+
+                reportFile.remove();
             } else {
-                qWarning() << "Could not save compressed scan log to:" << logFilePath;
+                qWarning() << "Could not create temporary report file:" << reportPath;
             }
         }
     }
@@ -561,9 +590,9 @@ QStringList MainWindow::buildClamscanArguments()
 }
 
 // ****************************************************************************
-// on_browseQuarantineButton_clicked()
+// browseQuarantineButtonClicked()
 // ****************************************************************************
-void MainWindow::on_browseQuarantineButton_clicked()
+void MainWindow::browseQuarantineButtonClicked()
 {
     QString path = QFileDialog::getExistingDirectory(this, tr("Select Quarantine Directory"),
                                                  QDir::homePath(),
@@ -574,9 +603,9 @@ void MainWindow::on_browseQuarantineButton_clicked()
 }
 
 // ****************************************************************************
-// on_browseScheduledScanPathButton_clicked()
+// browseScheduledScanPathButtonClicked()
 // ****************************************************************************
-void MainWindow::on_browseScheduledScanPathButton_clicked()
+void MainWindow::browseScheduledScanPathButtonClicked()
 {
     QString path = QFileDialog::getExistingDirectory(this, tr("Select Directory to Scan"),
                                                  QDir::homePath(),
@@ -589,17 +618,17 @@ void MainWindow::on_browseScheduledScanPathButton_clicked()
 // ****************************************************************************
 // New Scan Option Slots
 // ****************************************************************************
-void MainWindow::on_recursiveScanCheckBox_toggled(bool checked)
+void MainWindow::recursiveScanCheckBox_toggled(bool checked)
 {
     m_recursiveScanEnabled = checked;
 }
 
-void MainWindow::on_heuristicAlertsCheckBox_toggled(bool checked)
+void MainWindow::heuristicAlertsCheckBox_toggled(bool checked)
 {
     m_heuristicAlertsEnabled = checked;
 }
 
-void MainWindow::on_encryptedDocumentsAlertsCheckBox_toggled(bool checked)
+void MainWindow::encryptedDocumentsAlertsCheckBox_toggled(bool checked)
 {
     m_encryptedDocumentsAlertsEnabled = checked;
 }
@@ -733,8 +762,8 @@ void MainWindow::runScheduledScan()
 
     ui->outputLog->clear();
     ui->outputLog->append("Scheduled scan started at "
-                          + QTime::currentTime().toString("yyyy-MM-dd hh:mm:ss"));
-    updateStatusBar("Scheduled scan started...");
+                          + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+    updateStatusBar("Scheduled scan in progress...");
     QStringList arguments;
     // arguments << "--stdout" << "--no-summary";
     arguments << "--stdout" << "-i"; // Report only infected files
@@ -802,51 +831,51 @@ void MainWindow::runScheduledUpdate()
 }
 
 // ****************************************************************************
-// on_saveScanScheduleButton_clicked()
+// saveScanScheduleButtonClicked()
 // ****************************************************************************
-void MainWindow::on_saveScanScheduleButton_clicked()
+void MainWindow::saveScanScheduleButtonClicked()
 {
     saveScheduleSettings();
     startScanScheduler();
 }
 
 // ****************************************************************************
-// on_saveUpdateScheduleButton_clicked()
+// saveUpdateScheduleButtonClicked()
 // ****************************************************************************
-void MainWindow::on_saveUpdateScheduleButton_clicked()
+void MainWindow::saveUpdateScheduleButtonClicked()
 {
     saveScheduleSettings();
     startUpdateScheduler();
 }
 
 // ****************************************************************************
-// on_scanSchedulerTimer_timeout()
+// scanSchedulerTimerTimeout()
 // ****************************************************************************
-void MainWindow::on_scanSchedulerTimer_timeout()
+void MainWindow::scanSchedulerTimerTimeout()
 {
     runScheduledScan();
 }
 
 // ****************************************************************************
-// on_updateSchedulerTimer_timeout()
+// updateSchedulerTimerTimeout()
 // ****************************************************************************
-void MainWindow::on_updateSchedulerTimer_timeout()
+void MainWindow::updateSchedulerTimerTimeout()
 {
     runScheduledUpdate();
 }
 
 // ****************************************************************************
-// on_refreshVersionsButton_clicked()
+// refreshVersionsButtonClicked()
 // ****************************************************************************
-void MainWindow::on_refreshVersionsButton_clicked()
+void MainWindow::refreshVersionsButtonClicked()
 {
     updateVersionInfo();
 }
 
 // ****************************************************************************
-// on_updateNowButton_clicked()
+// updateNowButtonClicked()
 // ****************************************************************************
-void MainWindow::on_updateNowButton_clicked()
+void MainWindow::updateNowButtonClicked()
 {
     if (clamscanProcess->state() == QProcess::Running) {
         qWarning() << "A scan is running. Skipping update.";
@@ -872,9 +901,9 @@ void MainWindow::on_updateNowButton_clicked()
 }
 
 // ****************************************************************************
-// on_browseExclusionButton_clicked()
+// browseExclusionButtonClicked()
 // ****************************************************************************
-void MainWindow::on_browseExclusionButton_clicked()
+void MainWindow::browseExclusionButtonClicked()
 {
     QString path = QFileDialog::getExistingDirectory(this, tr("Select Directory to Exclude"),
                                                  QDir::homePath(),
@@ -1129,9 +1158,9 @@ void MainWindow::displayScanHistory()
 }
 
 // ****************************************************************************
-// on_clearHistoryButton_clicked()
+// clearHistoryButtonClicked()
 // ****************************************************************************
-void MainWindow::on_clearHistoryButton_clicked()
+void MainWindow::clearHistoryButtonClicked()
 {
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(this, tr("Clear Scan History"),
@@ -1191,19 +1220,17 @@ void MainWindow::updateVersionInfo()
     }
 }
 
-void MainWindow::on_scheduledRecursiveScanCheckBox_toggled(bool checked)
+void MainWindow::scheduledRecursiveScanCheckBox_toggled(bool checked)
 {
     m_scheduledRecursiveScanEnabled = checked;
 }
 
-void MainWindow::on_scheduledHeuristicAlertsCheckBox_toggled(bool checked)
+void MainWindow::scheduledHeuristicAlertsCheckBox_toggled(bool checked)
 {
     m_scheduledHeuristicAlertsEnabled = checked;
 }
 
-void MainWindow::on_scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked)
+void MainWindow::scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked)
 {
     m_scheduledEncryptedDocumentsAlertsEnabled = checked;
 }
-
-
