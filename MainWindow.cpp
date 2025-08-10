@@ -484,13 +484,37 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 header += "==== Calamity Scan Report ====" "\n";
                 header += QString("Timestamp: %1\n").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
                 header += QString("Targets: %1\n").arg(m_lastScanTargetsDisplay);
-                // Separate options and paths: extract options starting with '-'
-                QStringList opts; QStringList trailing;
+                // Separate options: extract arguments starting with '-'
+                QStringList opts;
                 for (const QString &arg : m_lastArguments) {
-                    if (arg.startsWith('-')) opts << arg; else trailing << arg;
+                    if (arg.startsWith('-')) opts << arg;
                 }
                 header += QString("Options: %1\n").arg(opts.join(' '));
                 header += QString("Command: %1 %2\n").arg(m_lastCommand, m_lastArguments.join(' '));
+                // Settings snapshot
+                const auto hasOpt = [&](const QString &opt){ return m_lastArguments.contains(opt); };
+                const bool usedSudo = (m_lastCommand == "sudo");
+                bool recursive = hasOpt("--recursive");
+                bool heuristic = hasOpt("--heuristic-alerts");
+                bool scanArchives = hasOpt("--scan-archive");
+                bool bell = hasOpt("--bell");
+                bool removeInf = hasOpt("--remove");
+                QString quarantinePath;
+                for (const QString &arg : m_lastArguments) {
+                    if (arg.startsWith("--move=")) { quarantinePath = arg.mid(QString("--move=").size()); break; }
+                }
+                QString alertEncrypted = hasOpt("--alert-encrypted=yes") ? "yes" : (hasOpt("--alert-encrypted=no") ? "no" : "(unspecified)");
+                header += "Settings:\n";
+                header += QString("  Sudo: %1\n").arg(usedSudo ? "yes" : "no");
+                header += QString("  Recursive: %1\n").arg(recursive ? "yes" : "no");
+                header += QString("  Heuristic Alerts: %1\n").arg(heuristic ? "yes" : "no");
+                header += QString("  Encrypted Alerts: %1\n").arg(alertEncrypted);
+                header += QString("  Scan Archives: %1\n").arg(scanArchives ? "yes" : "no");
+                header += QString("  Bell on Virus: %1\n").arg(bell ? "yes" : "no");
+                header += QString("  Remove Infected: %1\n").arg(removeInf ? "yes" : "no");
+                header += QString("  Move Infected: %1\n").arg(quarantinePath.isEmpty() ? "no" : "yes");
+                if (!quarantinePath.isEmpty()) header += QString("  Quarantine Path: %1\n").arg(quarantinePath);
+                header += QString("  Exclusions: %1\n").arg(exclusionPaths.isEmpty() ? "(none)" : exclusionPaths.join("; "));
                 header += "===============================\n\n";
 
                 reportFile.write(header.toUtf8());
