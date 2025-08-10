@@ -530,7 +530,8 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 // Build simple HTML
                 QString html;
                 html += "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Calamity Scan Report</title>";
-                html += "<style>body{font-family:sans-serif;background:#fff;color:#111}h1{margin-bottom:0}small{color:#555}table{border-collapse:collapse;margin:10px 0}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}code,pre{background:#f7f7f9;border:1px solid #e1e1e8;padding:8px;display:block;white-space:pre-wrap;}</style></head><body>";
+                html += "<style>body{font-family:sans-serif;background:#FADA5E;color:#111}h1{margin-bottom:0}small{color:#555}table{border-collapse:collapse;margin:10px 0}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}code,pre{background:#f7f7f9;border:1px solid #e1e1e8;padding:8px;display:block;white-space:pre-wrap;}</style></head><body>";
+                
                 if (!logoTag.isEmpty()) {
                     html += "<div style=\"display:flex;align-items:center;gap:10px;\">" + logoTag + "<div>";
                     html += "<h1>Calamity Scan Report</h1>";
@@ -540,6 +541,29 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                     html += "<h1>Calamity Scan Report</h1>";
                     html += QString("<small>Generated: %1</small>").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
                 }
+
+                // --- Customisation : add result status ---
+                QString statusMessage;
+                QString statusIcon;
+                if (exitCode == 0) {
+                    statusMessage = "No threats found";
+                    QFile iconFile(":/icons/led_green.png");
+                    if (iconFile.open(QIODevice::ReadOnly)) {
+                        statusIcon = QString("<img src=\"data:image/png;base64,%1\" style=\"width:32px;height:32px;vertical-align:middle;margin-right:10px;\"/>").arg(QString::fromLatin1(iconFile.readAll().toBase64()));
+                    }
+                } else {
+                    statusMessage = "Threats found!";
+                    QFile iconFile(":/icons/led_red.png");
+                    if (iconFile.open(QIODevice::ReadOnly)) {
+                        statusIcon = QString("<img src=\"data:image/png;base64,%1\" style=\"width:32px;height:32px;vertical-align:middle;margin-right:10px;\"/>").arg(QString::fromLatin1(iconFile.readAll().toBase64()));
+                    }
+                }
+                html += "<div style=\"display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #ccc;border-radius:5px;margin-top:20px;margin-bottom:20px;\">";
+                html += statusIcon;
+                html += "<div><h2 style=\"margin:0;font-size:24px;\">" + statusMessage + "</h2></div>";
+                html += "</div>";
+                // ---
+
                 html += "<h2>Summary</h2><table>";
                 html += QString("<tr><th>Targets</th><td>%1</td></tr>").arg(m_lastScanTargetsDisplay.toHtmlEscaped());
                 html += QString("<tr><th>Command</th><td><code>%1 %2</code></td></tr>").arg(m_lastCommand.toHtmlEscaped(), m_lastArguments.join(' ').toHtmlEscaped());
@@ -980,6 +1004,15 @@ void MainWindow::runScheduledScan()
     if (clamscanProcess->state() == QProcess::Running) {
         qWarning() << "A scan is already running. Skipping scheduled scan.";
         updateStatusBar("Scheduled scan skipped: Another scan in progress.");
+        return;
+    }
+
+    // Create a temporary file to store the scan log
+    m_logFile = new QTemporaryFile(this);
+    if (!m_logFile->open()) {
+        QMessageBox::critical(this, tr("File Error"), tr("Failed to create temporary log file."));
+        delete m_logFile;
+        m_logFile = nullptr;
         return;
     }
 

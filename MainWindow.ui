@@ -84,7 +84,6 @@
              </property>
             </widget>
            </item>
-           
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_14">
              <item>
@@ -162,7 +161,6 @@
                </property>
               </widget>
              </item>
-             
             </layout>
            </item>
           </layout>
@@ -275,7 +273,6 @@
              </property>
             </widget>
            </item>
-           
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_16">
              <item>
@@ -601,7 +598,14 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_3">
+              <widget class="QPushButton" name="clearHistoryButton">
+               <property name="text">
+                <string>Clear</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_8">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>
@@ -614,26 +618,19 @@
               </spacer>
              </item>
              <item>
-              <widget class="QPushButton" name="clearHistoryButton">
+              <widget class="QPushButton" name="openLastReportButton">
                <property name="text">
-                <string>Clear</string>
+                <string>Last Report</string>
                </property>
               </widget>
              </item>
-              <item>
-               <widget class="QPushButton" name="openLastReportButton">
-                <property name="text">
-                 <string>Open Last Report</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="openReportsFolderButton">
-                <property name="text">
-                 <string>Open Reports Folder</string>
-                </property>
-               </widget>
-              </item>
+             <item>
+              <widget class="QPushButton" name="openReportsFolderButton">
+               <property name="text">
+                <string>Reports Folder</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -665,10 +662,6 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources>
-  <include location="calamity.qrc"/>
- </resources>
- <connections/>
  <customwidgets>
   <customwidget>
    <class>ScanOutputTextEdit</class>
@@ -676,5 +669,8 @@
    <header>ScanOutputTextEdit.h</header>
   </customwidget>
  </customwidgets>
+ <resources>
+  <include location="calamity.qrc"/>
+ </resources>
+ <connections/>
 </ui>
-     

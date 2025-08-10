@@ -1,9 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>icons/app_icon.png</file>
-        <file>icons/Application.png</file>
-        <file>icons/Cancel.png</file>
-        <file>icons/Search.png</file>
         <file>icons/led_green.png</file>
         <file>icons/led_gray.png</file>
         <file>icons/app_icon_64x64.png</file>
