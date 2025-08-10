@@ -519,12 +519,30 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 }
                 QString alertEncrypted = hasOpt("--alert-encrypted=yes") ? "yes" : (hasOpt("--alert-encrypted=no") ? "no" : "(unspecified)");
 
+                // Optional embedded logo as data URI
+                QString logoTag;
+                {
+                    QFile logo(":/icons/app_icon_64x64.png");
+                    if (logo.open(QIODevice::ReadOnly)) {
+                        const QByteArray logoData = logo.readAll();
+                        const QString base64 = QString::fromLatin1(logoData.toBase64());
+                        logoTag = QString("<img src=\"data:image/png;base64,%1\" alt=\"Calamity\" style=\"width:64px;height:64px;vertical-align:middle;margin-right:10px;\"/>").arg(base64);
+                    }
+                }
+
                 // Build simple HTML
                 QString html;
                 html += "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Calamity Scan Report</title>";
                 html += "<style>body{font-family:sans-serif;background:#fff;color:#111}h1{margin-bottom:0}small{color:#555}table{border-collapse:collapse;margin:10px 0}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}code,pre{background:#f7f7f9;border:1px solid #e1e1e8;padding:8px;display:block;white-space:pre-wrap;}</style></head><body>";
-                html += "<h1>Calamity Scan Report</h1>";
-                html += QString("<small>Generated: %1</small>").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+                if (!logoTag.isEmpty()) {
+                    html += "<div style=\"display:flex;align-items:center;gap:10px;\">" + logoTag + "<div>";
+                    html += "<h1>Calamity Scan Report</h1>";
+                    html += QString("<small>Generated: %1</small>").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+                    html += "</div></div>";
+                } else {
+                    html += "<h1>Calamity Scan Report</h1>";
+                    html += QString("<small>Generated: %1</small>").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+                }
                 html += "<h2>Summary</h2><table>";
                 html += QString("<tr><th>Targets</th><td>%1</td></tr>").arg(m_lastScanTargetsDisplay.toHtmlEscaped());
                 html += QString("<tr><th>Command</th><td><code>%1 %2</code></td></tr>").arg(m_lastCommand.toHtmlEscaped(), m_lastArguments.join(' ').toHtmlEscaped());
