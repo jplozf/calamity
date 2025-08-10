@@ -11,6 +11,7 @@
 #include <QSystemTrayIcon>
 #include <QTimer> // For scheduling
 #include <QTemporaryFile>
+#include <QLineEdit>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -96,6 +97,7 @@ private:
     bool m_heuristicAlertsEnabled;
     bool m_encryptedDocumentsAlertsEnabled;
     QTemporaryFile *m_logFile;
+    QString m_lastScanTargetsDisplay; // Tracks last scan targets for history/logging
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;
@@ -148,5 +150,10 @@ private:
     void saveScanHistory(); // New: Save scan history
     void addScanResult(const QString &path, const QString &status, int threats); // New: Add scan result to history
     void displayScanHistory(); // New: Display history in table
+
+    // Helpers for multi-path support
+    QStringList parsePathsText(const QString &text) const;
+    QString joinPathsForDisplay(const QStringList &paths) const;
+    void appendPathToLineEdit(QLineEdit *lineEdit, const QString &path);
 };
 #endif // MAINWINDOW_H

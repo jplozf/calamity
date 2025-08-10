@@ -24,6 +24,7 @@
 #include <QFile>         // For file operations
 #include <QDesktopServices> // For opening files
 #include <QUrl>             // For opening files
+#include <QMetaType>
 
 // ****************************************************************************
 // MainWindow()
@@ -167,6 +168,40 @@ MainWindow::MainWindow(QWidget *parent)
     }
     displayScanHistory(); // Display history on startup
 }
+// ****************************************************************************
+// Helpers: multi-path parsing and display
+// ****************************************************************************
+QStringList MainWindow::parsePathsText(const QString &text) const
+{
+    QString normalized = text;
+    // Allow semicolons and newlines as separators
+    normalized.replace('\n', ';');
+    normalized.replace('\r', '');
+    QStringList parts = normalized.split(';', Qt::SkipEmptyParts);
+    QStringList paths;
+    for (QString part : parts) {
+        QString trimmed = part.trimmed();
+        if (!trimmed.isEmpty()) {
+            paths << trimmed;
+        }
+    }
+    return paths;
+}
+
+QString MainWindow::joinPathsForDisplay(const QStringList &paths) const
+{
+    return paths.join("; ");
+}
+
+void MainWindow::appendPathToLineEdit(QLineEdit *lineEdit, const QString &path)
+{
+    if (!lineEdit) return;
+    QStringList current = parsePathsText(lineEdit->text());
+    if (!current.contains(path)) {
+        current << path;
+    }
+    lineEdit->setText(joinPathsForDisplay(current));
+}
 
 // ****************************************************************************
 // ~MainWindow()
@@ -305,7 +340,7 @@ void MainWindow::browseButton_clicked()
     }
 
     if (!path.isEmpty()) {
-        ui->pathLineEdit->setText(path);
+        appendPathToLineEdit(ui->pathLineEdit, path);
     }
 }
 
@@ -315,9 +350,9 @@ void MainWindow::browseButton_clicked()
 void MainWindow::scanButton_clicked()
 {
     qDebug() << "scanButton_clicked() called.";
-    QString pathToScan = ui->pathLineEdit->text();
-    qDebug() << "Path to scan from pathLineEdit:" << pathToScan;
-    if (pathToScan.isEmpty()) {
+    QStringList pathsToScan = parsePathsText(ui->pathLineEdit->text());
+    qDebug() << "Paths to scan from pathLineEdit:" << pathsToScan;
+    if (pathsToScan.isEmpty()) {
         QMessageBox::warning(this, tr("Input Error"), tr("Please select a file or directory to scan."));
         return;
     }
@@ -337,15 +372,16 @@ void MainWindow::scanButton_clicked()
     }
 
     ui->outputLog->clear();
+    m_lastScanTargetsDisplay = joinPathsForDisplay(pathsToScan);
     ui->outputLog
-        ->append(QString("Scan of '%1' started at %2").arg(pathToScan, QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss")));
+        ->append(QString("Scan of '%1' started at %2").arg(m_lastScanTargetsDisplay, QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss")));
     updateStatusBar("Scan in progress...");
     updateScanStatusLed(true); // Explicitly set LED to green when scan starts
     ui->scanButton->setEnabled(false);
     ui->stopButton->setEnabled(true);
 
     QStringList arguments = buildClamscanArguments();
-    arguments << pathToScan; // Add the path to scan as the last argument
+    arguments << pathsToScan; // Add all paths to scan as the last arguments
 
     qDebug() << "Executing clamscan with arguments:" << arguments;
 
@@ -513,8 +549,8 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
     updateStatusBar(statusMessage);
 
     // Add to scan history
-    QString scannedPath = ui->pathLineEdit->text();
-    qDebug() << "Path from pathLineEdit in clamscanFinished:" << scannedPath;
+    QString scannedPath = m_lastScanTargetsDisplay.isEmpty() ? joinPathsForDisplay(parsePathsText(ui->pathLineEdit->text())) : m_lastScanTargetsDisplay;
+    qDebug() << "Paths from pathLineEdit in clamscanFinished:" << scannedPath;
     addScanResult(scannedPath, scanStatus, threats);
 
     ui->scanButton->setEnabled(true);
@@ -645,7 +681,7 @@ void MainWindow::browseScheduledScanPathButtonClicked()
                                                  QDir::homePath(),
                                                  QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     if (!path.isEmpty()) {
-        ui->scheduledScanPathLineEdit->setText(path);
+        appendPathToLineEdit(ui->scheduledScanPathLineEdit, path);
     }
 }
 
@@ -688,7 +724,14 @@ void MainWindow::loadScheduleSettings()
     ui->enableScanScheduleCheckBox->setChecked(settings->value("ScanSchedule/Enabled", false).toBool());
     ui->scanFrequencyComboBox->setCurrentText(settings->value("ScanSchedule/Frequency", "Daily").toString());
     ui->scanTimeEdit->setTime(settings->value("ScanSchedule/Time", QTime(3, 0)).toTime());
-    ui->scheduledScanPathLineEdit->setText(settings->value("ScanSchedule/Path", QDir::homePath()).toString());
+    // Backward compatibility: accept single string or string list
+    QVariant scheduledPathVar = settings->value("ScanSchedule/Path", QDir::homePath());
+    QStringList scheduledPaths = scheduledPathVar.toStringList();
+    if (!scheduledPaths.isEmpty()) {
+        ui->scheduledScanPathLineEdit->setText(joinPathsForDisplay(scheduledPaths));
+    } else {
+        ui->scheduledScanPathLineEdit->setText(scheduledPathVar.toString());
+    }
     ui->scheduledScanSudoCheckBox->setChecked(settings->value("ScanSchedule/Sudo", false).toBool());
     ui->scheduledRecursiveScanCheckBox->setChecked(settings->value("ScanSchedule/RecursiveScan", false).toBool());
     ui->scheduledHeuristicAlertsCheckBox->setChecked(settings->value("ScanSchedule/HeuristicAlerts", false).toBool());
@@ -715,7 +758,7 @@ void MainWindow::saveScheduleSettings()
     settings->setValue("ScanSchedule/Enabled", ui->enableScanScheduleCheckBox->isChecked());
     settings->setValue("ScanSchedule/Frequency", ui->scanFrequencyComboBox->currentText());
     settings->setValue("ScanSchedule/Time", ui->scanTimeEdit->time());
-    settings->setValue("ScanSchedule/Path", ui->scheduledScanPathLineEdit->text());
+    settings->setValue("ScanSchedule/Path", parsePathsText(ui->scheduledScanPathLineEdit->text()));
     settings->setValue("ScanSchedule/Sudo", ui->scheduledScanSudoCheckBox->isChecked());
     settings->setValue("ScanSchedule/RecursiveScan", ui->scheduledRecursiveScanCheckBox->isChecked());
     settings->setValue("ScanSchedule/HeuristicAlerts", ui->scheduledHeuristicAlertsCheckBox->isChecked());
@@ -791,8 +834,8 @@ void MainWindow::startUpdateScheduler()
 // ****************************************************************************
 void MainWindow::runScheduledScan()
 {
-    QString pathToScan = ui->scheduledScanPathLineEdit->text();
-    if (pathToScan.isEmpty()) {
+    QStringList pathsToScan = parsePathsText(ui->scheduledScanPathLineEdit->text());
+    if (pathsToScan.isEmpty()) {
         qWarning() << "Scheduled scan path is empty. Skipping scan.";
         updateStatusBar("Scheduled scan skipped: No path specified.");
         return;
@@ -805,7 +848,7 @@ void MainWindow::runScheduledScan()
     }
 
     ui->outputLog->clear();
-    ui->outputLog->append("Scheduled scan started at "
+    ui->outputLog->append("Scheduled scan (" + joinPathsForDisplay(pathsToScan) + ") started at "
                           + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
     updateStatusBar("Scheduled scan in progress...");
     updateScanStatusLed(true);
@@ -841,7 +884,8 @@ void MainWindow::runScheduledScan()
     if (ui->scheduledRemoveInfectedCheckBox->isChecked()) {
         arguments << "--remove";
     }
-    arguments << pathToScan;
+    arguments << pathsToScan;
+    m_lastScanTargetsDisplay = joinPathsForDisplay(pathsToScan);
 
     qDebug() << "Executing scheduled clamscan with arguments:" << arguments;
     QString command = "clamscan";
@@ -1034,7 +1078,7 @@ void MainWindow::saveUiSettings()
 
     // Save Manual Scan Settings
     settings->beginGroup("ManualScan");
-    settings->setValue("path", ui->pathLineEdit->text());
+    settings->setValue("path", parsePathsText(ui->pathLineEdit->text()));
     settings->setValue("scanArchives", ui->scanArchivesCheckBox->isChecked());
     settings->setValue("moveInfected", ui->moveInfectedCheckBox->isChecked());
     settings->setValue("quarantinePath", ui->quarantinePathLineEdit->text());
@@ -1067,7 +1111,16 @@ void MainWindow::loadUiSettings()
 
     // Load Manual Scan Settings
     settings->beginGroup("ManualScan");
-    ui->pathLineEdit->setText(settings->value("path", QDir::homePath()).toString());
+    // Backward compatibility: accept single string or string list
+    {
+        QVariant manualPathVar = settings->value("path", QDir::homePath());
+        QStringList manualPaths = manualPathVar.toStringList();
+        if (!manualPaths.isEmpty()) {
+            ui->pathLineEdit->setText(joinPathsForDisplay(manualPaths));
+        } else {
+            ui->pathLineEdit->setText(manualPathVar.toString());
+        }
+    }
     ui->scanArchivesCheckBox->setChecked(settings->value("scanArchives", false).toBool());
     ui->moveInfectedCheckBox->setChecked(settings->value("moveInfected", false).toBool());
     ui->quarantinePathLineEdit->setText(settings->value("quarantinePath", "").toString());
@@ -1400,9 +1453,9 @@ void MainWindow::on_scanHistoryTable_cellDoubleClicked(int row, int column)
 void MainWindow::handleFileDropped(const QString &path)
 {
     qDebug() << "File dropped signal received in MainWindow:" << path;
-    ui->pathLineEdit->setText(path);
+    appendPathToLineEdit(ui->pathLineEdit, path);
     ui->outputLog->clear();
-    ui->outputLog->append(QString("Scanning: %1").arg(path));
+    ui->outputLog->append(QString("Scanning: %1").arg(joinPathsForDisplay(parsePathsText(ui->pathLineEdit->text()))));
     QApplication::processEvents(); // Force UI update
     scanButton_clicked();
 }
