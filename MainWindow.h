@@ -12,6 +12,7 @@
 #include <QTimer> // For scheduling
 #include <QTemporaryFile>
 #include <QLineEdit>
+#include <QElapsedTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -100,6 +101,8 @@ private:
     QString m_lastScanTargetsDisplay; // Tracks last scan targets for history/logging
     QString m_lastCommand;            // The executable used (e.g., clamscan or sudo)
     QStringList m_lastArguments;      // Full argument list used for the last run
+    QElapsedTimer m_scanTimer;        // Measures elapsed scan time
+    QDateTime m_scanStartedAt;        // Start timestamp
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;

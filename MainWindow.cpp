@@ -25,6 +25,9 @@
 #include <QDesktopServices> // For opening files
 #include <QUrl>             // For opening files
 #include <QMetaType>
+#include <QHostInfo>
+#include <QSysInfo>
+#include <QTextStream>
 
 // ****************************************************************************
 // MainWindow()
@@ -373,6 +376,8 @@ void MainWindow::scanButton_clicked()
 
     ui->outputLog->clear();
     m_lastScanTargetsDisplay = joinPathsForDisplay(pathsToScan);
+    m_scanStartedAt = QDateTime::currentDateTime();
+    m_scanTimer.restart();
     ui->outputLog
         ->append(QString("Scan of '%1' started at %2").arg(m_lastScanTargetsDisplay, QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss")));
     updateStatusBar("Scan in progress...");
@@ -476,29 +481,20 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
         m_logFile = nullptr;
 
         if (!logData.isEmpty()) {
-            QString reportPath = QDir::tempPath() + "/report.txt";
+            // Build HTML report
+            QString reportPath = QDir::tempPath() + "/report.html";
             QFile reportFile(reportPath);
-            if (reportFile.open(QIODevice::WriteOnly)) {
-                // Build header with metadata
-                QString header;
-                header += "==== Calamity Scan Report ====" "\n";
-                header += QString("Timestamp: %1\n").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
-                header += QString("Targets: %1\n").arg(m_lastScanTargetsDisplay);
-                // Separate options: extract arguments starting with '-'
+            if (reportFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                // Collect environment info
+                QString hostname = QHostInfo::localHostName();
+                QString kernel = QSysInfo::prettyProductName() + " (" + QSysInfo::kernelType() + " " + QSysInfo::kernelVersion() + ")";
+                qint64 elapsedMs = m_scanTimer.isValid() ? m_scanTimer.elapsed() : 0;
+
+                // Extract options
                 QStringList opts;
                 for (const QString &arg : m_lastArguments) {
                     if (arg.startsWith('-')) opts << arg;
                 }
-                header += QString("Options: %1\n").arg(opts.join(' '));
-                header += QString("Command: %1 %2\n").arg(m_lastCommand, m_lastArguments.join(' '));
-                header += QString("Application: Calamity %1.%2-%3\n").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH);
-                if (!m_clamavVersion.isEmpty()) {
-                    header += QString("ClamAV Engine: %1\n").arg(m_clamavVersion);
-                }
-                if (!m_signatureVersionInfo.isEmpty()) {
-                    header += QString("Signatures: %1\n").arg(m_signatureVersionInfo);
-                }
-                // Settings snapshot
                 const auto hasOpt = [&](const QString &opt){ return m_lastArguments.contains(opt); };
                 const bool usedSudo = (m_lastCommand == "sudo");
                 bool recursive = hasOpt("--recursive");
@@ -511,21 +507,49 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                     if (arg.startsWith("--move=")) { quarantinePath = arg.mid(QString("--move=").size()); break; }
                 }
                 QString alertEncrypted = hasOpt("--alert-encrypted=yes") ? "yes" : (hasOpt("--alert-encrypted=no") ? "no" : "(unspecified)");
-                header += "Settings:\n";
-                header += QString("  Sudo: %1\n").arg(usedSudo ? "yes" : "no");
-                header += QString("  Recursive: %1\n").arg(recursive ? "yes" : "no");
-                header += QString("  Heuristic Alerts: %1\n").arg(heuristic ? "yes" : "no");
-                header += QString("  Encrypted Alerts: %1\n").arg(alertEncrypted);
-                header += QString("  Scan Archives: %1\n").arg(scanArchives ? "yes" : "no");
-                header += QString("  Bell on Virus: %1\n").arg(bell ? "yes" : "no");
-                header += QString("  Remove Infected: %1\n").arg(removeInf ? "yes" : "no");
-                header += QString("  Move Infected: %1\n").arg(quarantinePath.isEmpty() ? "no" : "yes");
-                if (!quarantinePath.isEmpty()) header += QString("  Quarantine Path: %1\n").arg(quarantinePath);
-                header += QString("  Exclusions: %1\n").arg(exclusionPaths.isEmpty() ? "(none)" : exclusionPaths.join("; "));
-                header += "===============================\n\n";
 
-                reportFile.write(header.toUtf8());
-                reportFile.write(logData);
+                // Build simple HTML
+                QString html;
+                html += "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Calamity Scan Report</title>";
+                html += "<style>body{font-family:sans-serif;background:#fff;color:#111}h1{margin-bottom:0}small{color:#555}table{border-collapse:collapse;margin:10px 0}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}code,pre{background:#f7f7f9;border:1px solid #e1e1e8;padding:8px;display:block;white-space:pre-wrap;}</style></head><body>";
+                html += "<h1>Calamity Scan Report</h1>";
+                html += QString("<small>Generated: %1</small>").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+                html += "<h2>Summary</h2><table>";
+                html += QString("<tr><th>Targets</th><td>%1</td></tr>").arg(m_lastScanTargetsDisplay.toHtmlEscaped());
+                html += QString("<tr><th>Command</th><td><code>%1 %2</code></td></tr>").arg(m_lastCommand.toHtmlEscaped(), m_lastArguments.join(' ').toHtmlEscaped());
+                html += QString("<tr><th>Options</th><td><code>%1</code></td></tr>").arg(opts.join(' ').toHtmlEscaped());
+                html += QString("<tr><th>Application</th><td>Calamity %1.%2-%3</td></tr>").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH);
+                if (!m_clamavVersion.isEmpty()) {
+                    html += QString("<tr><th>ClamAV Engine</th><td>%1</td></tr>").arg(m_clamavVersion.toHtmlEscaped());
+                }
+                if (!m_signatureVersionInfo.isEmpty()) {
+                    html += QString("<tr><th>Signatures</th><td>%1</td></tr>").arg(m_signatureVersionInfo.toHtmlEscaped());
+                }
+                html += QString("<tr><th>Hostname</th><td>%1</td></tr>").arg(hostname.toHtmlEscaped());
+                html += QString("<tr><th>OS/Kernel</th><td>%1</td></tr>").arg(kernel.toHtmlEscaped());
+                html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_scanStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
+                html += QString("<tr><th>Elapsed</th><td>%1 ms</td></tr>").arg(elapsedMs);
+                html += "</table>";
+
+                html += "<h2>Settings</h2><table>";
+                html += QString("<tr><th>Sudo</th><td>%1</td></tr>").arg(usedSudo ? "yes" : "no");
+                html += QString("<tr><th>Recursive</th><td>%1</td></tr>").arg(recursive ? "yes" : "no");
+                html += QString("<tr><th>Heuristic Alerts</th><td>%1</td></tr>").arg(heuristic ? "yes" : "no");
+                html += QString("<tr><th>Encrypted Alerts</th><td>%1</td></tr>").arg(alertEncrypted.toHtmlEscaped());
+                html += QString("<tr><th>Scan Archives</th><td>%1</td></tr>").arg(scanArchives ? "yes" : "no");
+                html += QString("<tr><th>Bell on Virus</th><td>%1</td></tr>").arg(bell ? "yes" : "no");
+                html += QString("<tr><th>Remove Infected</th><td>%1</td></tr>").arg(removeInf ? "yes" : "no");
+                html += QString("<tr><th>Move Infected</th><td>%1</td></tr>").arg(quarantinePath.isEmpty() ? "no" : "yes");
+                if (!quarantinePath.isEmpty()) html += QString("<tr><th>Quarantine Path</th><td>%1</td></tr>").arg(quarantinePath.toHtmlEscaped());
+                html += QString("<tr><th>Exclusions</th><td>%1</td></tr>").arg(exclusionPaths.isEmpty() ? "(none)" : exclusionPaths.join("; ").toHtmlEscaped());
+                html += "</table>";
+
+                html += "<h2>Raw Output</h2><pre>" + QString::fromUtf8(logData).toHtmlEscaped() + "</pre>";
+                html += "</body></html>";
+
+                QTextStream out(&reportFile);
+                out.setCodec("UTF-8");
+                out << html;
                 reportFile.close();
 
                 QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
@@ -898,8 +922,10 @@ void MainWindow::runScheduledScan()
     }
 
     ui->outputLog->clear();
+    m_scanStartedAt = QDateTime::currentDateTime();
+    m_scanTimer.restart();
     ui->outputLog->append("Scheduled scan (" + joinPathsForDisplay(pathsToScan) + ") started at "
-                          + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+                          + m_scanStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
     updateStatusBar("Scheduled scan in progress...");
     updateScanStatusLed(true);
     QStringList arguments;
