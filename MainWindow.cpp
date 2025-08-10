@@ -511,7 +511,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 bool recursive = hasOpt("--recursive");
                 bool heuristic = hasOpt("--heuristic-alerts");
                 bool scanArchives = hasOpt("--scan-archive");
-                bool bell = hasOpt("--bell");
+                
                 bool removeInf = hasOpt("--remove");
                 QString quarantinePath;
                 for (const QString &arg : m_lastArguments) {
@@ -548,7 +548,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 html += QString("<tr><th>Heuristic Alerts</th><td>%1</td></tr>").arg(heuristic ? "yes" : "no");
                 html += QString("<tr><th>Encrypted Alerts</th><td>%1</td></tr>").arg(alertEncrypted.toHtmlEscaped());
                 html += QString("<tr><th>Scan Archives</th><td>%1</td></tr>").arg(scanArchives ? "yes" : "no");
-                html += QString("<tr><th>Bell on Virus</th><td>%1</td></tr>").arg(bell ? "yes" : "no");
+                
                 html += QString("<tr><th>Remove Infected</th><td>%1</td></tr>").arg(removeInf ? "yes" : "no");
                 html += QString("<tr><th>Move Infected</th><td>%1</td></tr>").arg(quarantinePath.isEmpty() ? "no" : "yes");
                 if (!quarantinePath.isEmpty()) html += QString("<tr><th>Quarantine Path</th><td>%1</td></tr>").arg(quarantinePath.toHtmlEscaped());
