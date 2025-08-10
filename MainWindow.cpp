@@ -299,6 +299,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     saveUiSettings(); // Save UI settings before closing
     saveExclusionSettings(); // Save exclusion settings before closing
     saveScanHistory(); // Save scan history before closing
+    saveEmailSettings(); // Save email settings before closing
     if (trayIcon->isVisible()) {
         hide();
         event->ignore();
