@@ -580,10 +580,6 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 if (zipProcess.exitCode() == 0) {
                     qDebug() << "Scan log saved to:" << zipFilePath;
                     m_lastReportZipPath = zipFilePath;
-                    trayIcon->showMessage("Calamity",
-                                          tr("Report saved: %1").arg(zipFilePath),
-                                          QSystemTrayIcon::Information,
-                                          3000);
                 } else {
                     qWarning() << "Could not save compressed scan log to:" << zipFilePath;
                     qWarning() << "zip process error:" << zipProcess.readAllStandardError();
@@ -604,9 +600,9 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
         statusMessage = "Scan finished: No threats found.";
         scanStatus = "Clean";
         trayIcon->showMessage("Calamity",
-                              tr("Scan finished.\nNo threats found."),
+                              tr("Scan finished.\nNo threats found.\nReport: %1").arg(m_lastReportZipPath),
                               QSystemTrayIcon::Information,
-                              2000);
+                              4000);
     } else if (exitCode == 1) {
         statusMessage = "Scan finished: Threats found!";
         scanStatus = "Threats Found";
@@ -618,9 +614,9 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
             threats = threatsMatch.captured(1).toInt();
         }
         trayIcon->showMessage("Calamity",
-                              tr("Scan finished.\nThreats found."),
+                              tr("Scan finished.\nThreats found: %1\nReport: %2").arg(threats).arg(m_lastReportZipPath),
                               QSystemTrayIcon::Critical,
-                              2000);
+                              4000);
     } else if (exitCode == 2) {
         statusMessage = "Scan finished: Error occurred.";
         scanStatus = "Error";
