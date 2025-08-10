@@ -251,6 +251,15 @@ void MainWindow::createTrayIcon()
     connect(showHideAction, &QAction::triggered, this, &MainWindow::showHideActionTriggered);
     trayMenu->addAction(showHideAction);
 
+    // Report-related actions
+    QAction *openLastReportAction = new QAction(tr("Open Last Report"), this);
+    connect(openLastReportAction, &QAction::triggered, this, &MainWindow::openLastReportButtonClicked);
+    trayMenu->addAction(openLastReportAction);
+
+    QAction *openReportsFolderAction = new QAction(tr("Open Reports Folder"), this);
+    connect(openReportsFolderAction, &QAction::triggered, this, &MainWindow::openReportsFolderButtonClicked);
+    trayMenu->addAction(openReportsFolderAction);
+
     trayMenu->addSeparator();
 
     QAction *quitAction = new QAction(tr("Quit"), this);
