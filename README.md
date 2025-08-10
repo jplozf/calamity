@@ -31,7 +31,7 @@ Before you begin, ensure you have met the following requirements:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/calamity.git
+    git clone https://github.com/jplozf/calamity.git
     cd calamity
     ```
 
@@ -62,6 +62,13 @@ Before you begin, ensure you have met the following requirements:
 6.  You can stop the scan at any time by clicking the "Stop" button.
 7.  You can also schedule scans, updates and add exclusions.
 8.  The "About" tab displays some useful informations, and previous reports can be examined by double-clicking the corresponding line.
+
+## TODO
+
+*   Multi paths scans.
+*   Improve audible alerts.
+*   Improve scheduling.
+*   Report by mail.
 
 ## License
 
