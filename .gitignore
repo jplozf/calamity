@@ -81,3 +81,8 @@ CMakeLists.txt.user*
 .rcc/
 .uic/
 /build*/
+
+# Added by Gemini CLI
+calamity
+libs/
+moc_predefs.h
