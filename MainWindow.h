@@ -13,12 +13,12 @@
 #include <QTemporaryFile>
 #include <QLineEdit>
 #include <QElapsedTimer>
+#include "libs/SmtpClient-for-Qt/src/SmtpMime"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
 
 class MainWindow;
-
 }
 QT_END_NAMESPACE
 
@@ -31,6 +31,15 @@ public:
     ~MainWindow();
 
 private slots:
+    void onEmailReportCheckBox_toggled(bool checked);
+    void onSaveEmailSettingsButton_clicked();
+    void onTestEmailButton_clicked();
+    void sendEmailReport(const QString &reportPath);
+    void handleSmtpConnected();
+    void handleSmtpAuthenticated();
+    void handleSmtpMailSent();
+    void handleSmtpError(SmtpClient::SmtpError e);
+    void handleSmtpDisconnected();
     void updateScanStatusLed(bool scanning);
     void browseButton_clicked();
     void scanButton_clicked();
@@ -88,6 +97,8 @@ private slots:
     void handleFileDropped(const QString &path);
 
 private:
+    void loadEmailSettings();
+    void saveEmailSettings();
     Ui::MainWindow *ui;
     QProcess *clamscanProcess;
     QSystemTrayIcon *trayIcon;
@@ -127,6 +138,8 @@ private:
     QLabel *scanStatusLed;
 
     QStringList exclusionPaths; // New: To store exclusion paths
+
+    SmtpClient *smtpClient; // New: SmtpClient instance
 
     void createTrayIcon();
     void updateStatusBar(const QString &message);
