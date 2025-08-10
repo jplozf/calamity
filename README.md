@@ -63,6 +63,37 @@ Before you begin, ensure you have met the following requirements:
 7.  You can also schedule scans, updates and add exclusions.
 8.  The "About" tab displays some useful informations, and previous reports can be examined by double-clicking the corresponding line.
 
+## NOTES
+
+The application use IPC Shared Memory Segment to prevent to be launched more than once at a time;
+If it crashed and can't be relaunched, maybe you'll have to unlock the IPC Shared Memory Segment.
+
+You first have to list all the IPC resources :
+```bash
+lsipc -m
+```
+Find the ID for the one which have a KEY with value different from 0 :
+```bash
+KEY        ID         PERMS OWNER SIZE NATTCH STATUS  CTIME    CPID    LPID COMMAND
+0x00000000 819200 rw----rw-   jpl 7,5M      2 dest    08:12  724027    2585 /opt/Tabby/tabby --type=gpu-process --no-sandbox --crash
+0x00000000 819201 rw----rw-   jpl 7,5M      2 dest    08:12  724027    2585 /opt/Tabby/tabby --type=gpu-process --no-sandbox --crash
+0x00000000 950276 rw-------   jpl  36K      2 dest    10:46    5878    2585 /opt/jdk-17/bin/java -server --add-exports=java.desktop/
+0x00000000 7      rw-------   jpl 256M      2 dest   août09    4751    2585 /usr/bin/csd-background
+0x00000000 10     rw-------   jpl 512K      2 dest   août09    5061    2585 /usr/bin/python3 -sP /usr/bin/ulauncher --hide-window --
+0x00000000 917517 rw-------   jpl 512K      2 dest    10:29    5066    2585 /usr/bin/nemo-desktop
+0x00000000 98323  rw-------   jpl 512K      2 dest   août09    5347    2585 /usr/libexec/xdg-desktop-portal-gtk
+0x00000000 23     rw-------   jpl 512K      2 dest   août09    5036    2585 /usr/libexec/xapps/xapp-sn-watcher
+0x00000000 32797  rw-------   jpl   4M      2 dest   août09    6097 1254623 nemo
+0x00000000 36     rw-------   jpl 512K      2 dest   août09    6097 1254623 nemo
+0x00000000 983080 rw-------   jpl 512K      2 dest    13:07    4905    2585 cinnamon --replace
+0x512dd0f7 983084 rw-------   jpl   1B      1         13:08 2569350 2598695 /home/jpl/Projets/Qt/calamity/build/Desktop_Qt_5_15_2_GC
+0x00000000 720950 rw-------   jpl 512K      2 dest   août09 1310710    2585 /usr/bin/galculator
+```
+And then, you'll have to remove this IPC resource :
+```bash
+ipcrm -m 983084
+```
+
 ## TODO
 
 *   Multi paths scans.
