@@ -168,20 +168,7 @@
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QPushButton" name="openLastReportButton">
-               <property name="text">
-                <string>Open Last Report</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="openReportsFolderButton">
-               <property name="text">
-                <string>Open Reports Folder</string>
-               </property>
-              </widget>
-             </item>
+             
             </layout>
            </item>
           </layout>
@@ -645,6 +632,20 @@
                </property>
               </widget>
              </item>
+              <item>
+               <widget class="QPushButton" name="openLastReportButton">
+                <property name="text">
+                 <string>Open Last Report</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="openReportsFolderButton">
+                <property name="text">
+                 <string>Open Reports Folder</string>
+                </property>
+               </widget>
+              </item>
             </layout>
            </item>
            <item>
