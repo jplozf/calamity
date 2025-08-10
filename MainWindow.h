@@ -98,6 +98,8 @@ private:
     bool m_encryptedDocumentsAlertsEnabled;
     QTemporaryFile *m_logFile;
     QString m_lastScanTargetsDisplay; // Tracks last scan targets for history/logging
+    QString m_lastCommand;            // The executable used (e.g., clamscan or sudo)
+    QStringList m_lastArguments;      // Full argument list used for the last run
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;

@@ -176,7 +176,7 @@ QStringList MainWindow::parsePathsText(const QString &text) const
     QString normalized = text;
     // Allow semicolons and newlines as separators
     normalized.replace('\n', ';');
-    normalized.replace('\r', '');
+    normalized.remove('\r');
     QStringList parts = normalized.split(';', Qt::SkipEmptyParts);
     QStringList paths;
     for (QString part : parts) {
@@ -391,6 +391,10 @@ void MainWindow::scanButton_clicked()
         arguments.prepend("clamscan");
     }
 
+    // Save last invocation for report
+    m_lastCommand = command;
+    m_lastArguments = arguments;
+
     clamscanProcess->start(command, arguments);
 
     if (!clamscanProcess->waitForStarted()) {
@@ -475,6 +479,21 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
             QString reportPath = QDir::tempPath() + "/report.txt";
             QFile reportFile(reportPath);
             if (reportFile.open(QIODevice::WriteOnly)) {
+                // Build header with metadata
+                QString header;
+                header += "==== Calamity Scan Report ====" "\n";
+                header += QString("Timestamp: %1\n").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+                header += QString("Targets: %1\n").arg(m_lastScanTargetsDisplay);
+                // Separate options and paths: extract options starting with '-'
+                QStringList opts; QStringList trailing;
+                for (const QString &arg : m_lastArguments) {
+                    if (arg.startsWith('-')) opts << arg; else trailing << arg;
+                }
+                header += QString("Options: %1\n").arg(opts.join(' '));
+                header += QString("Command: %1 %2\n").arg(m_lastCommand, m_lastArguments.join(' '));
+                header += "===============================\n\n";
+
+                reportFile.write(header.toUtf8());
                 reportFile.write(logData);
                 reportFile.close();
 
@@ -893,6 +912,9 @@ void MainWindow::runScheduledScan()
         command = "sudo";
         arguments.prepend("clamscan");
     }
+    // Save last invocation for report
+    m_lastCommand = command;
+    m_lastArguments = arguments;
     clamscanProcess->start(command, arguments);
 
     // After the first run, set the timer for the next day/week/month
