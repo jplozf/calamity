@@ -491,6 +491,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 }
                 header += QString("Options: %1\n").arg(opts.join(' '));
                 header += QString("Command: %1 %2\n").arg(m_lastCommand, m_lastArguments.join(' '));
+                header += QString("Application: Calamity %1.%2-%3\n").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH);
                 if (!m_clamavVersion.isEmpty()) {
                     header += QString("ClamAV Engine: %1\n").arg(m_clamavVersion);
                 }
