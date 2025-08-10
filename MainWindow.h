@@ -74,7 +74,7 @@ private slots:
     void scheduledHeuristicAlertsCheckBox_toggled(bool checked);
     void scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked);
     void scheduledScanArchivesCheckBox_toggled(bool checked);
-    void scheduledBellOnVirusCheckBox_toggled(bool checked);
+    
     void scheduledMoveInfectedCheckBox_toggled(bool checked);
     void scheduledRemoveInfectedCheckBox_toggled(bool checked);
     void browseScheduledQuarantineButtonClicked();

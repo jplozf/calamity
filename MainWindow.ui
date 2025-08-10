@@ -84,13 +84,7 @@
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QCheckBox" name="bellOnVirusCheckBox">
-             <property name="text">
-              <string>Bell on Virus</string>
-             </property>
-            </widget>
-           </item>
+           
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_14">
              <item>
@@ -281,13 +275,7 @@
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QCheckBox" name="scheduledBellOnVirusCheckBox">
-             <property name="text">
-              <string>Bell on Virus</string>
-             </property>
-            </widget>
-           </item>
+           
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_16">
              <item>

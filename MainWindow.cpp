@@ -98,7 +98,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->scheduledHeuristicAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledHeuristicAlertsCheckBox_toggled);
     connect(ui->scheduledEncryptedDocumentsAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledEncryptedDocumentsAlertsCheckBox_toggled);
     connect(ui->scheduledScanArchivesCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledScanArchivesCheckBox_toggled);
-    connect(ui->scheduledBellOnVirusCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledBellOnVirusCheckBox_toggled);
+    
     connect(ui->scheduledMoveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledMoveInfectedCheckBox_toggled);
     connect(ui->scheduledRemoveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledRemoveInfectedCheckBox_toggled);
     connect(ui->browseScheduledQuarantineButton, &QPushButton::clicked, this, &MainWindow::browseScheduledQuarantineButtonClicked);
@@ -724,9 +724,7 @@ QStringList MainWindow::buildClamscanArguments()
     if (ui->removeInfectedCheckBox->isChecked()) {
         arguments << "--remove";
     }
-    if (ui->bellOnVirusCheckBox->isChecked()) {
-        arguments << "--bell";
-    }
+    
 
     // Add new scan options
     if (ui->recursiveScanCheckBox->isChecked()) {
@@ -864,7 +862,7 @@ void MainWindow::loadScheduleSettings()
     ui->scheduledHeuristicAlertsCheckBox->setChecked(settings->value("ScanSchedule/HeuristicAlerts", false).toBool());
     ui->scheduledEncryptedDocumentsAlertsCheckBox->setChecked(settings->value("ScanSchedule/EncryptedDocumentsAlerts", false).toBool());
     ui->scheduledScanArchivesCheckBox->setChecked(settings->value("ScanSchedule/ScanArchives", false).toBool());
-    ui->scheduledBellOnVirusCheckBox->setChecked(settings->value("ScanSchedule/BellOnVirus", false).toBool());
+    
     ui->scheduledMoveInfectedCheckBox->setChecked(settings->value("ScanSchedule/MoveInfected", false).toBool());
     ui->scheduledQuarantinePathLineEdit->setText(settings->value("ScanSchedule/QuarantinePath", "").toString());
     ui->scheduledRemoveInfectedCheckBox->setChecked(settings->value("ScanSchedule/RemoveInfected", false).toBool());
@@ -891,7 +889,7 @@ void MainWindow::saveScheduleSettings()
     settings->setValue("ScanSchedule/HeuristicAlerts", ui->scheduledHeuristicAlertsCheckBox->isChecked());
     settings->setValue("ScanSchedule/EncryptedDocumentsAlerts", ui->scheduledEncryptedDocumentsAlertsCheckBox->isChecked());
     settings->setValue("ScanSchedule/ScanArchives", ui->scheduledScanArchivesCheckBox->isChecked());
-    settings->setValue("ScanSchedule/BellOnVirus", ui->scheduledBellOnVirusCheckBox->isChecked());
+    
     settings->setValue("ScanSchedule/MoveInfected", ui->scheduledMoveInfectedCheckBox->isChecked());
     settings->setValue("ScanSchedule/QuarantinePath", ui->scheduledQuarantinePathLineEdit->text());
     settings->setValue("ScanSchedule/RemoveInfected", ui->scheduledRemoveInfectedCheckBox->isChecked());
@@ -999,9 +997,7 @@ void MainWindow::runScheduledScan()
     if (ui->scheduledScanArchivesCheckBox->isChecked()) {
         arguments << "--scan-archive";
     }
-    if (ui->scheduledBellOnVirusCheckBox->isChecked()) {
-        arguments << "--bell";
-    }
+    
     if (ui->scheduledMoveInfectedCheckBox->isChecked()) {
         QString quarantinePath = ui->scheduledQuarantinePathLineEdit->text();
         if (!quarantinePath.isEmpty()) {
@@ -1215,7 +1211,7 @@ void MainWindow::saveUiSettings()
     settings->setValue("moveInfected", ui->moveInfectedCheckBox->isChecked());
     settings->setValue("quarantinePath", ui->quarantinePathLineEdit->text());
     settings->setValue("removeInfected", ui->removeInfectedCheckBox->isChecked());
-    settings->setValue("bellOnVirus", ui->bellOnVirusCheckBox->isChecked());
+    
     settings->setValue("sudo", ui->sudoCheckBox->isChecked());
     settings->setValue("recursiveScan", ui->recursiveScanCheckBox->isChecked());
     settings->setValue("heuristicAlerts", ui->heuristicAlertsCheckBox->isChecked());
@@ -1257,7 +1253,7 @@ void MainWindow::loadUiSettings()
     ui->moveInfectedCheckBox->setChecked(settings->value("moveInfected", false).toBool());
     ui->quarantinePathLineEdit->setText(settings->value("quarantinePath", "").toString());
     ui->removeInfectedCheckBox->setChecked(settings->value("removeInfected", false).toBool());
-    ui->bellOnVirusCheckBox->setChecked(settings->value("bellOnVirus", false).toBool());
+    
     ui->sudoCheckBox->setChecked(settings->value("sudo", false).toBool());
     ui->recursiveScanCheckBox->setChecked(settings->value("recursiveScan", false).toBool());
     ui->heuristicAlertsCheckBox->setChecked(settings->value("heuristicAlerts", false).toBool());
@@ -1496,10 +1492,7 @@ void MainWindow::scheduledScanArchivesCheckBox_toggled(bool checked)
     m_scheduledScanArchivesEnabled = checked;
 }
 
-void MainWindow::scheduledBellOnVirusCheckBox_toggled(bool checked)
-{
-    m_scheduledBellOnVirusEnabled = checked;
-}
+ 
 
 void MainWindow::scheduledMoveInfectedCheckBox_toggled(bool checked)
 {
