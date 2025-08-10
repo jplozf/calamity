@@ -175,6 +175,13 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="openReportsFolderButton">
+               <property name="text">
+                <string>Open Reports Folder</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
           </layout>

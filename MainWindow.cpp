@@ -88,6 +88,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->moveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::moveInfectedCheckBox_toggled);
     connect(ui->clearHistoryButton, &QPushButton::clicked, this, &MainWindow::clearHistoryButtonClicked);
     connect(ui->openLastReportButton, &QPushButton::clicked, this, &MainWindow::openLastReportButtonClicked);
+    connect(ui->openReportsFolderButton, &QPushButton::clicked, this, &MainWindow::openReportsFolderButtonClicked);
     connect(ui->browseQuarantineButton, &QPushButton::clicked, this, &MainWindow::browseQuarantineButtonClicked);
     connect(ui->browseScheduledScanPathButton, &QPushButton::clicked, this, &MainWindow::browseScheduledScanPathButtonClicked);
     connect(ui->recursiveScanCheckBox, &QCheckBox::toggled, this, &MainWindow::recursiveScanCheckBox_toggled);
@@ -569,6 +570,11 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
                 if (zipProcess.exitCode() == 0) {
                     qDebug() << "Scan log saved to:" << zipFilePath;
+                    m_lastReportZipPath = zipFilePath;
+                    trayIcon->showMessage("Calamity",
+                                          tr("Report saved: %1").arg(zipFilePath),
+                                          QSystemTrayIcon::Information,
+                                          3000);
                 } else {
                     qWarning() << "Could not save compressed scan log to:" << zipFilePath;
                     qWarning() << "zip process error:" << zipProcess.readAllStandardError();
@@ -781,6 +787,20 @@ void MainWindow::openLastReportButtonClicked()
     // Take the newest
     QFileInfo newest = list.last();
     QDesktopServices::openUrl(QUrl::fromLocalFile(newest.absoluteFilePath()));
+}
+
+// ****************************************************************************
+// openReportsFolderButtonClicked()
+// ****************************************************************************
+void MainWindow::openReportsFolderButtonClicked()
+{
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+    QDir dir(scansDirPath);
+    if (!dir.exists()) {
+        QMessageBox::information(this, tr("No Reports"), tr("No scan reports directory found."));
+        return;
+    }
+    QDesktopServices::openUrl(QUrl::fromLocalFile(scansDirPath));
 }
 
 // ****************************************************************************

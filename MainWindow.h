@@ -79,6 +79,7 @@ private slots:
     void scheduledRemoveInfectedCheckBox_toggled(bool checked);
     void browseScheduledQuarantineButtonClicked();
     void openLastReportButtonClicked();
+    void openReportsFolderButtonClicked();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -104,6 +105,7 @@ private:
     QStringList m_lastArguments;      // Full argument list used for the last run
     QElapsedTimer m_scanTimer;        // Measures elapsed scan time
     QDateTime m_scanStartedAt;        // Start timestamp
+    QString m_lastReportZipPath;      // Path to last generated report zip
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;
