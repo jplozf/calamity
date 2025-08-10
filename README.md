@@ -63,7 +63,7 @@ Before you begin, ensure you have met the following requirements:
 7.  You can also schedule scans, updates and add exclusions.
 8.  The "About" tab displays some useful informations, and previous reports can be examined by double-clicking the corresponding line.
 
-## NOTES
+## Notes
 
 The application use IPC Shared Memory Segment to prevent to be launched more than once at a time;
 If it crashed and can't be relaunched, maybe you'll have to unlock the IPC Shared Memory Segment.

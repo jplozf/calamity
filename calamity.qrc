@@ -4,5 +4,6 @@
         <file>icons/led_green.png</file>
         <file>icons/led_gray.png</file>
         <file>icons/app_icon_64x64.png</file>
+        <file>icons/led_red.png</file>
     </qresource>
 </RCC>
