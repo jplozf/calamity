@@ -112,6 +112,9 @@ private:
     QLabel *appVersionLabel;
     QLabel *clamavVersionLabel;
     QLabel *signatureVersionLabel;
+    // Cached version info
+    QString m_clamavVersion;
+    QString m_signatureVersionInfo;
 
     QPixmap ledGreenPixmap;
     QPixmap ledGrayPixmap;

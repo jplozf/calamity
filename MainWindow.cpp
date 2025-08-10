@@ -491,6 +491,12 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 }
                 header += QString("Options: %1\n").arg(opts.join(' '));
                 header += QString("Command: %1 %2\n").arg(m_lastCommand, m_lastArguments.join(' '));
+                if (!m_clamavVersion.isEmpty()) {
+                    header += QString("ClamAV Engine: %1\n").arg(m_clamavVersion);
+                }
+                if (!m_signatureVersionInfo.isEmpty()) {
+                    header += QString("Signatures: %1\n").arg(m_signatureVersionInfo);
+                }
                 // Settings snapshot
                 const auto hasOpt = [&](const QString &opt){ return m_lastArguments.contains(opt); };
                 const bool usedSudo = (m_lastCommand == "sudo");
@@ -1363,8 +1369,10 @@ void MainWindow::updateVersionInfo()
     QRegularExpression clamavRx("ClamAV (\\d+\\.\\d+\\.\\d+)");
     QRegularExpressionMatch clamavMatch = clamavRx.match(clamavOutput);
     if (clamavMatch.hasMatch()) {
-        if (clamavVersionLabel) clamavVersionLabel->setText(tr("ClamAV Version: %1").arg(clamavMatch.captured(1)));
+        m_clamavVersion = clamavMatch.captured(1);
+        if (clamavVersionLabel) clamavVersionLabel->setText(tr("ClamAV Version: %1").arg(m_clamavVersion));
     } else {
+        m_clamavVersion.clear();
         if (clamavVersionLabel) clamavVersionLabel->setText(tr("ClamAV Version: Not Found"));
         qWarning() << "Could not parse ClamAV version from:" << clamavOutput;
     }
@@ -1376,8 +1384,10 @@ void MainWindow::updateVersionInfo()
     if (signatureMatch.hasMatch()) {
         QString signatureVer = signatureMatch.captured(1);
         QString signatureDate = signatureMatch.captured(2).trimmed();
-        if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: %1 (Last Updated: %2)").arg(signatureVer, signatureDate));
+        m_signatureVersionInfo = tr("%1 (Last Updated: %2)").arg(signatureVer, signatureDate);
+        if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: %1").arg(m_signatureVersionInfo));
     } else {
+        m_signatureVersionInfo.clear();
         if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: Not Found"));
         qWarning() << "Could not parse Signature version from clamscan output:" << clamavOutput;
     }
