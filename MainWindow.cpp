@@ -87,6 +87,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->clearOutputButton, &QPushButton::clicked, this, &MainWindow::clearOutputButton_clicked);
     connect(ui->moveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::moveInfectedCheckBox_toggled);
     connect(ui->clearHistoryButton, &QPushButton::clicked, this, &MainWindow::clearHistoryButtonClicked);
+    connect(ui->openLastReportButton, &QPushButton::clicked, this, &MainWindow::openLastReportButtonClicked);
     connect(ui->browseQuarantineButton, &QPushButton::clicked, this, &MainWindow::browseQuarantineButtonClicked);
     connect(ui->browseScheduledScanPathButton, &QPushButton::clicked, this, &MainWindow::browseScheduledScanPathButtonClicked);
     connect(ui->recursiveScanCheckBox, &QCheckBox::toggled, this, &MainWindow::recursiveScanCheckBox_toggled);
@@ -757,6 +758,29 @@ void MainWindow::browseScheduledScanPathButtonClicked()
     if (!path.isEmpty()) {
         appendPathToLineEdit(ui->scheduledScanPathLineEdit, path);
     }
+}
+
+// ****************************************************************************
+// openLastReportButtonClicked()
+// ****************************************************************************
+void MainWindow::openLastReportButtonClicked()
+{
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+    QDir dir(scansDirPath);
+    if (!dir.exists()) {
+        QMessageBox::information(this, tr("No Reports"), tr("No scan reports directory found."));
+        return;
+    }
+    QStringList filters;
+    filters << "*.zip";
+    QFileInfoList list = dir.entryInfoList(filters, QDir::Files | QDir::NoSymLinks, QDir::Time | QDir::Reversed);
+    if (list.isEmpty()) {
+        QMessageBox::information(this, tr("No Reports"), tr("No scan reports found."));
+        return;
+    }
+    // Take the newest
+    QFileInfo newest = list.last();
+    QDesktopServices::openUrl(QUrl::fromLocalFile(newest.absoluteFilePath()));
 }
 
 // ****************************************************************************

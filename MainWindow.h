@@ -78,6 +78,7 @@ private slots:
     void scheduledMoveInfectedCheckBox_toggled(bool checked);
     void scheduledRemoveInfectedCheckBox_toggled(bool checked);
     void browseScheduledQuarantineButtonClicked();
+    void openLastReportButtonClicked();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
