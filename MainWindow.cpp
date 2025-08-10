@@ -242,12 +242,10 @@ void MainWindow::createTrayIcon()
     trayMenu = new QMenu(this);
 
     QAction *scanAction = new QAction(tr("Scan Now"), this);
-    scanAction->setIcon(QIcon(":/icons/Search.png"));
     connect(scanAction, &QAction::triggered, this, &MainWindow::scanActionTriggered);
     trayMenu->addAction(scanAction);
 
     QAction *showHideAction = new QAction(tr("Show / Hide"), this);
-    showHideAction->setIcon(QIcon(":/icons/Application.png"));
     connect(showHideAction, &QAction::triggered, this, &MainWindow::showHideActionTriggered);
     trayMenu->addAction(showHideAction);
 
@@ -263,7 +261,6 @@ void MainWindow::createTrayIcon()
     trayMenu->addSeparator();
 
     QAction *quitAction = new QAction(tr("Quit"), this);
-    quitAction->setIcon(QIcon(":/icons/Cancel.png"));
     connect(quitAction, &QAction::triggered, this, &MainWindow::quitActionTriggered);
     trayMenu->addAction(quitAction);
 
