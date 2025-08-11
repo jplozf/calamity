@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     if (sharedMemory.create(1) == false)
     {
         QMessageBox::warning(0, "Calamity is already running", "An instance of Calamity is already running.");
-        // To detach the Shared Memory of crashed process :
+        // To detach the IPC Shared Memory Segment resource of crashed process :
         // lsipc -m
         // ipcrm -m <ID>
         return 0;
@@ -25,3 +25,7 @@ int main(int argc, char *argv[])
     w.show();
     return a.exec();
 }
+
+// https://linuxcapable.com/install-clamav-on-fedora-linux/
+// sudo systemctl stop clamav-freshclam
+// sudo systemctl disable clamav-freshclam

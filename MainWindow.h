@@ -77,11 +77,13 @@ private slots:
     void recursiveScanCheckBox_toggled(bool checked);
     void heuristicAlertsCheckBox_toggled(bool checked);
     void encryptedDocumentsAlertsCheckBox_toggled(bool checked);
+    void detectPuaCheckBox_toggled(bool checked);
 
     // New slots for scheduled scan options
     void scheduledRecursiveScanCheckBox_toggled(bool checked);
     void scheduledHeuristicAlertsCheckBox_toggled(bool checked);
     void scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked);
+    void scheduledDetectPuaCheckBox_toggled(bool checked);
     void scheduledScanArchivesCheckBox_toggled(bool checked);
     
     void scheduledMoveInfectedCheckBox_toggled(bool checked);
@@ -110,6 +112,7 @@ private:
     bool m_recursiveScanEnabled;
     bool m_heuristicAlertsEnabled;
     bool m_encryptedDocumentsAlertsEnabled;
+    bool m_detectPuaEnabled;
     QTemporaryFile *m_logFile;
     QString m_lastScanTargetsDisplay; // Tracks last scan targets for history/logging
     QString m_lastCommand;            // The executable used (e.g., clamscan or sudo)
@@ -120,6 +123,7 @@ private:
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;
+    bool m_scheduledDetectPuaEnabled;
     bool m_scheduledScanArchivesEnabled;
     bool m_scheduledBellOnVirusEnabled;
     bool m_scheduledMoveInfectedEnabled;

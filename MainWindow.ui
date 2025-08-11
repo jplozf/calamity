@@ -85,6 +85,13 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="detectPuaCheckBox">
+             <property name="text">
+              <string>Detect Potentially Unwanted Applications (PUA)</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_14">
              <item>
               <widget class="QCheckBox" name="moveInfectedCheckBox">
@@ -270,6 +277,13 @@
             <widget class="QCheckBox" name="scheduledScanArchivesCheckBox">
              <property name="text">
               <string>Scan Archives</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="scheduledDetectPuaCheckBox">
+             <property name="text">
+              <string>Detect Potentially Unwanted Applications (PUA)</string>
              </property>
             </widget>
            </item>

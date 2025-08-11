@@ -105,9 +105,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->recursiveScanCheckBox, &QCheckBox::toggled, this, &MainWindow::recursiveScanCheckBox_toggled);
     connect(ui->heuristicAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::heuristicAlertsCheckBox_toggled);
     connect(ui->encryptedDocumentsAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::encryptedDocumentsAlertsCheckBox_toggled);
+    connect(ui->detectPuaCheckBox, &QCheckBox::toggled, this, &MainWindow::detectPuaCheckBox_toggled);
     connect(ui->scheduledRecursiveScanCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledRecursiveScanCheckBox_toggled);
     connect(ui->scheduledHeuristicAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledHeuristicAlertsCheckBox_toggled);
     connect(ui->scheduledEncryptedDocumentsAlertsCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledEncryptedDocumentsAlertsCheckBox_toggled);
+    connect(ui->scheduledDetectPuaCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledDetectPuaCheckBox_toggled);
     connect(ui->scheduledScanArchivesCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledScanArchivesCheckBox_toggled);
     
     connect(ui->scheduledMoveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::scheduledMoveInfectedCheckBox_toggled);
@@ -499,6 +501,9 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     Q_UNUSED(exitStatus); // Not using exitStatus directly, but keeping for signature
 
+    int numThreats = 0;
+    QStringList threatDetails;
+
     if (m_logFile) {
         m_logFile->seek(0);
         QByteArray logData = m_logFile->readAll();
@@ -507,6 +512,22 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
         m_logFile = nullptr;
 
         if (!logData.isEmpty()) {
+            // Parse threats from log
+            QString logString = QString::fromUtf8(logData);
+            QRegularExpression threatLineRx("^(.*):\\s+(.*)\\s+FOUND");
+            for (const QString& line : logString.split('\n', Qt::SkipEmptyParts)) {
+                QString trimmedLine = line.trimmed();
+                QRegularExpressionMatch match = threatLineRx.match(trimmedLine);
+                if (match.hasMatch()) {
+                    QString filePath = match.captured(1);
+                    QString threatName = match.captured(2);
+                    QString searchUrl = QString("https://www.google.com/search?q=site:clamav.net+%1").arg(QString(QUrl::toPercentEncoding(threatName)));
+                    threatDetails << QString("<tr><td>%1</td><td>%2</td><td><a href=\"%3\" target=\"_blank\">More info</a></td></tr>")
+                                     .arg(filePath.toHtmlEscaped(), threatName.toHtmlEscaped(), searchUrl);
+                }
+            }
+            numThreats = threatDetails.size();
+
             // Build HTML report
             QString reportPath = QDir::tempPath() + "/report.html";
             QFile reportFile(reportPath);
@@ -526,6 +547,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 bool recursive = hasOpt("--recursive");
                 bool heuristic = hasOpt("--heuristic-alerts");
                 bool scanArchives = hasOpt("--scan-archive");
+                bool detectPua = hasOpt("--detect-pua=yes");
                 
                 bool removeInf = hasOpt("--remove");
                 QString quarantinePath;
@@ -578,8 +600,11 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 }
                 html += "<div style=\"display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #ccc;border-radius:5px;margin-top:20px;margin-bottom:20px;\">";
                 html += statusIcon;
-                html += "<div><h2 style=\"margin:0;font-size:24px;\">" + statusMessage + "</h2></div>";
-                html += "</div>";
+                html += "<div><h2 style=\"margin:0;font-size:24px;\">" + statusMessage + "</h2>";
+                if (numThreats > 0) {
+                    html += QString("<p style=\"margin:0;font-size:14px;\">%1 threat(s) found.</p>").arg(numThreats);
+                }
+                html += "</div></div>";
                 // ---
 
                 html += "<h2>Summary</h2><table>";
@@ -603,6 +628,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 html += QString("<tr><th>Sudo</th><td>%1</td></tr>").arg(usedSudo ? "yes" : "no");
                 html += QString("<tr><th>Recursive</th><td>%1</td></tr>").arg(recursive ? "yes" : "no");
                 html += QString("<tr><th>Heuristic Alerts</th><td>%1</td></tr>").arg(heuristic ? "yes" : "no");
+                html += QString("<tr><th>Detect PUA</th><td>%1</td></tr>").arg(detectPua ? "yes" : "no");
                 html += QString("<tr><th>Encrypted Alerts</th><td>%1</td></tr>").arg(alertEncrypted.toHtmlEscaped());
                 html += QString("<tr><th>Scan Archives</th><td>%1</td></tr>").arg(scanArchives ? "yes" : "no");
                 
@@ -611,6 +637,13 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 if (!quarantinePath.isEmpty()) html += QString("<tr><th>Quarantine Path</th><td>%1</td></tr>").arg(quarantinePath.toHtmlEscaped());
                 html += QString("<tr><th>Exclusions</th><td>%1</td></tr>").arg(exclusionPaths.isEmpty() ? "(none)" : exclusionPaths.join("; ").toHtmlEscaped());
                 html += "</table>";
+
+                if (numThreats > 0) {
+                    html += "<h2>Threats Found</h2><table>";
+                    html += "<tr><th>File Path</th><th>Threat Name</th><th>Details</th></tr>";
+                    html += threatDetails.join("");
+                    html += "</table>";
+                }
 
                 html += "<h2>Raw Output</h2><pre>" + QString::fromUtf8(logData).toHtmlEscaped() + "</pre>";
                 html += "</body></html>";
@@ -651,7 +684,6 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
     QString statusMessage;
     QString scanStatus;
-    int threats = 0;
 
     if (exitCode == 0) {
         statusMessage = "Scan finished: No threats found.";
@@ -663,15 +695,8 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
     } else if (exitCode == 1) {
         statusMessage = "Scan finished: Threats found!";
         scanStatus = "Threats Found";
-        // Attempt to parse threats found from outputLog
-        QString output = ui->outputLog->toPlainText();
-        QRegularExpression threatsRx("Infected files: (\\d+)");
-        QRegularExpressionMatch threatsMatch = threatsRx.match(output);
-        if (threatsMatch.hasMatch()) {
-            threats = threatsMatch.captured(1).toInt();
-        }
         trayIcon->showMessage("Calamity",
-                              tr("Scan finished.\nThreats found: %1\nReport: %2").arg(threats).arg(m_lastReportZipPath),
+                              tr("Scan finished.\nThreats found: %1\nReport: %2").arg(numThreats).arg(m_lastReportZipPath),
                               QSystemTrayIcon::Critical,
                               4000);
     } else if (exitCode == 2) {
@@ -694,11 +719,12 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
     // Add to scan history
     QString scannedPath = m_lastScanTargetsDisplay.isEmpty() ? joinPathsForDisplay(parsePathsText(ui->pathLineEdit->text())) : m_lastScanTargetsDisplay;
     qDebug() << "Paths from pathLineEdit in clamscanFinished:" << scannedPath;
-    addScanResult(scannedPath, scanStatus, threats);
+    addScanResult(scannedPath, scanStatus, numThreats);
 
     ui->scanButton->setEnabled(true);
     ui->stopButton->setEnabled(false);
 }
+
 
 
 // ****************************************************************************
@@ -792,6 +818,10 @@ QStringList MainWindow::buildClamscanArguments()
         arguments << "--alert-encrypted=no";
     }
 
+    if (ui->detectPuaCheckBox->isChecked()) {
+        arguments << "--detect-pua=yes";
+    }
+
     // Add exclusion paths
     for (const QString &path : qAsConst(exclusionPaths)) {
         arguments << "--exclude=" + path;
@@ -881,6 +911,11 @@ void MainWindow::encryptedDocumentsAlertsCheckBox_toggled(bool checked)
     m_encryptedDocumentsAlertsEnabled = checked;
 }
 
+void MainWindow::detectPuaCheckBox_toggled(bool checked)
+{
+    m_detectPuaEnabled = checked;
+}
+
 
 
 // ****************************************************************************
@@ -914,6 +949,7 @@ void MainWindow::loadScheduleSettings()
     ui->scheduledRecursiveScanCheckBox->setChecked(settings->value("ScanSchedule/RecursiveScan", false).toBool());
     ui->scheduledHeuristicAlertsCheckBox->setChecked(settings->value("ScanSchedule/HeuristicAlerts", false).toBool());
     ui->scheduledEncryptedDocumentsAlertsCheckBox->setChecked(settings->value("ScanSchedule/EncryptedDocumentsAlerts", false).toBool());
+    ui->scheduledDetectPuaCheckBox->setChecked(settings->value("ScanSchedule/DetectPua", false).toBool());
     ui->scheduledScanArchivesCheckBox->setChecked(settings->value("ScanSchedule/ScanArchives", false).toBool());
     
     ui->scheduledMoveInfectedCheckBox->setChecked(settings->value("ScanSchedule/MoveInfected", false).toBool());
@@ -941,6 +977,7 @@ void MainWindow::saveScheduleSettings()
     settings->setValue("ScanSchedule/RecursiveScan", ui->scheduledRecursiveScanCheckBox->isChecked());
     settings->setValue("ScanSchedule/HeuristicAlerts", ui->scheduledHeuristicAlertsCheckBox->isChecked());
     settings->setValue("ScanSchedule/EncryptedDocumentsAlerts", ui->scheduledEncryptedDocumentsAlertsCheckBox->isChecked());
+    settings->setValue("ScanSchedule/DetectPua", ui->scheduledDetectPuaCheckBox->isChecked());
     settings->setValue("ScanSchedule/ScanArchives", ui->scheduledScanArchivesCheckBox->isChecked());
     
     settings->setValue("ScanSchedule/MoveInfected", ui->scheduledMoveInfectedCheckBox->isChecked());
@@ -1055,6 +1092,9 @@ void MainWindow::runScheduledScan()
         arguments << "--alert-encrypted=yes";
     } else {
         arguments << "--alert-encrypted=no";
+    }
+    if (ui->scheduledDetectPuaCheckBox->isChecked()) {
+        arguments << "--detect-pua=yes";
     }
     if (ui->scheduledScanArchivesCheckBox->isChecked()) {
         arguments << "--scan-archive";
@@ -1278,6 +1318,7 @@ void MainWindow::saveUiSettings()
     settings->setValue("recursiveScan", ui->recursiveScanCheckBox->isChecked());
     settings->setValue("heuristicAlerts", ui->heuristicAlertsCheckBox->isChecked());
     settings->setValue("encryptedDocumentsAlerts", ui->encryptedDocumentsAlertsCheckBox->isChecked());
+    settings->setValue("detectPua", ui->detectPuaCheckBox->isChecked());
     settings->endGroup();
 
     settings->sync();
@@ -1320,6 +1361,7 @@ void MainWindow::loadUiSettings()
     ui->recursiveScanCheckBox->setChecked(settings->value("recursiveScan", false).toBool());
     ui->heuristicAlertsCheckBox->setChecked(settings->value("heuristicAlerts", false).toBool());
     ui->encryptedDocumentsAlertsCheckBox->setChecked(settings->value("encryptedDocumentsAlerts", false).toBool());
+    ui->detectPuaCheckBox->setChecked(settings->value("detectPua", false).toBool());
     settings->endGroup();
 
     settings->sync();
@@ -1570,6 +1612,11 @@ void MainWindow::scheduledHeuristicAlertsCheckBox_toggled(bool checked)
 void MainWindow::scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked)
 {
     m_scheduledEncryptedDocumentsAlertsEnabled = checked;
+}
+
+void MainWindow::scheduledDetectPuaCheckBox_toggled(bool checked)
+{
+    m_scheduledDetectPuaEnabled = checked;
 }
 
 // ****************************************************************************
