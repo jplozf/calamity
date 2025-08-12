@@ -91,6 +91,11 @@ private slots:
     void browseScheduledQuarantineButtonClicked();
     void openLastReportButtonClicked();
     void openReportsFolderButtonClicked();
+    void openScanReportFolderButtonClicked();
+    void openLastUpdateReportButtonClicked();
+    void openUpdateReportsFolderButtonClicked();
+    void on_updateHistoryTable_cellDoubleClicked(int row, int column);
+    void refreshUpdateHistoryButtonClicked();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -164,6 +169,8 @@ private:
     void loadUiSettings();
     void updateVersionInfo();
     void generateUpdateReport(const QByteArray &logData);
+    void populateUpdateHistoryTable();
+    QString m_lastUpdateReportZipPath;
 
     // Scan History related slots
     void clearHistoryButtonClicked();

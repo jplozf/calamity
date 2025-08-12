@@ -22,7 +22,7 @@
       </property>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>4</number>
+        <number>5</number>
        </property>
        <widget class="QWidget" name="tabScan">
         <attribute name="title">
@@ -417,6 +417,51 @@
             </widget>
            </item>
            <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_19">
+             <item>
+              <widget class="QPushButton" name="refreshUpdateHistoryButton">
+               <property name="text">
+                <string>Refresh</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="clearUpdatesHistoryButton">
+               <property name="text">
+                <string>Clear</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Updates History</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="openLastUpdateReportButton">
+               <property name="text">
+                <string>Last Report</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="openUpdateReportsFolderButton">
+               <property name="text">
+                <string>Reports Folder</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QTableWidget" name="updateHistoryTable"/>
+           </item>
+           <item>
             <spacer name="verticalSpacer">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
@@ -739,17 +784,14 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_8">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Scans History</string>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
                </property>
-              </spacer>
+              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="openLastReportButton">

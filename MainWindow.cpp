@@ -99,7 +99,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->moveInfectedCheckBox, &QCheckBox::toggled, this, &MainWindow::moveInfectedCheckBox_toggled);
     connect(ui->clearHistoryButton, &QPushButton::clicked, this, &MainWindow::clearHistoryButtonClicked);
     connect(ui->openLastReportButton, &QPushButton::clicked, this, &MainWindow::openLastReportButtonClicked);
-    connect(ui->openReportsFolderButton, &QPushButton::clicked, this, &MainWindow::openReportsFolderButtonClicked);
+    connect(ui->openReportsFolderButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::openScanReportFolderButtonClicked);
     connect(ui->browseQuarantineButton, &QPushButton::clicked, this, &MainWindow::browseQuarantineButtonClicked);
     connect(ui->browseScheduledScanPathButton, &QPushButton::clicked, this, &MainWindow::browseScheduledScanPathButtonClicked);
     connect(ui->recursiveScanCheckBox, &QCheckBox::toggled, this, &MainWindow::recursiveScanCheckBox_toggled);
@@ -132,6 +135,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Connect scan history table double click
     connect(ui->scanHistoryTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::on_scanHistoryTable_cellDoubleClicked);
+    connect(ui->openLastUpdateReportButton, &QPushButton::clicked, this, &MainWindow::openLastUpdateReportButtonClicked);
+    connect(ui->openUpdateReportsFolderButton, &QPushButton::clicked, this, &MainWindow::openUpdateReportsFolderButtonClicked);
+    connect(ui->updateHistoryTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::on_updateHistoryTable_cellDoubleClicked);
+    connect(ui->refreshUpdateHistoryButton, &QPushButton::clicked, this, &MainWindow::refreshUpdateHistoryButtonClicked);
 
     // Connect fileDropped signal from custom QTextEdit
     connect(ui->outputLog, &ScanOutputTextEdit::fileDropped, this, &MainWindow::handleFileDropped);
@@ -199,6 +206,12 @@ MainWindow::MainWindow(QWidget *parent)
         ui->scanHistoryTable->setColumnWidth(i, 100); // Set a default width, will be adjusted by ResizeToContents
     }
     displayScanHistory(); // Display history on startup
+
+    // Setup update history table headers
+    ui->updateHistoryTable->setColumnCount(2);
+    ui->updateHistoryTable->setHorizontalHeaderLabels(QStringList() << "Timestamp" << "Status");
+    ui->updateHistoryTable->horizontalHeader()->setStretchLastSection(true);
+    populateUpdateHistoryTable();
 }
 // ****************************************************************************
 // Helpers: multi-path parsing and display
@@ -275,11 +288,6 @@ void MainWindow::createTrayIcon()
     QAction *showHideAction = new QAction(tr("Show / Hide"), this);
     connect(showHideAction, &QAction::triggered, this, &MainWindow::showHideActionTriggered);
     trayMenu->addAction(showHideAction);
-
-    // Report-related actions
-    QAction *openLastReportAction = new QAction(tr("Open Last Report"), this);
-    connect(openLastReportAction, &QAction::triggered, this, &MainWindow::openLastReportButtonClicked);
-    trayMenu->addAction(openLastReportAction);
 
     QAction *openReportsFolderAction = new QAction(tr("Open Reports Folder"), this);
     connect(openReportsFolderAction, &QAction::triggered, this, &MainWindow::openReportsFolderButtonClicked);
@@ -509,7 +517,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     Q_UNUSED(exitStatus); // Not using exitStatus directly, but keeping for signature
 
-    if (m_lastCommand.contains("freshclam")) {
+    if (m_lastCommand.contains("freshclam") || m_lastArguments.contains("freshclam")) {
         if (m_logFile) {
             m_logFile->seek(0);
             QByteArray logData = m_logFile->readAll();
@@ -906,6 +914,21 @@ void MainWindow::openLastReportButtonClicked()
 // ****************************************************************************
 void MainWindow::openReportsFolderButtonClicked()
 {
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
+                           + "/.calamity/reports";
+    QDir dir(scansDirPath);
+    if (!dir.exists()) {
+        QMessageBox::information(this, tr("No Reports"), tr("No scan reports directory found."));
+        return;
+    }
+    QDesktopServices::openUrl(QUrl::fromLocalFile(scansDirPath));
+}
+
+// ****************************************************************************
+// openScanReportFolderButtonClicked()
+// ****************************************************************************
+void MainWindow::openScanReportFolderButtonClicked()
+{
     QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/scans";
     QDir dir(scansDirPath);
     if (!dir.exists()) {
@@ -913,6 +936,99 @@ void MainWindow::openReportsFolderButtonClicked()
         return;
     }
     QDesktopServices::openUrl(QUrl::fromLocalFile(scansDirPath));
+}
+
+// ****************************************************************************
+// openLastUpdateReportButtonClicked()
+// ****************************************************************************
+void MainWindow::openLastUpdateReportButtonClicked()
+{
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
+                           + "/.calamity/reports/updates";
+    QDir dir(scansDirPath);
+    if (!dir.exists()) {
+        QMessageBox::information(this, tr("No Reports"), tr("No update reports directory found."));
+        return;
+    }
+    QStringList filters;
+    filters << "*.zip";
+    QFileInfoList list = dir.entryInfoList(filters,
+                                           QDir::Files | QDir::NoSymLinks,
+                                           QDir::Time | QDir::Reversed);
+    if (list.isEmpty()) {
+        QMessageBox::information(this, tr("No Reports"), tr("No update reports found."));
+        return;
+    }
+    // Take the newest
+    QFileInfo newest = list.last();
+    QDesktopServices::openUrl(QUrl::fromLocalFile(newest.absoluteFilePath()));
+}
+
+// ****************************************************************************
+// openUpdateReportsFolderButtonClicked()
+// ****************************************************************************
+void MainWindow::openUpdateReportsFolderButtonClicked()
+{
+    QString updatesDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/updates";
+    QDir dir(updatesDirPath);
+    if (!dir.exists()) {
+        QMessageBox::information(this, tr("No Reports"), tr("No update reports directory found."));
+        return;
+    }
+    QDesktopServices::openUrl(QUrl::fromLocalFile(updatesDirPath));
+}
+
+// ****************************************************************************
+// populateUpdateHistoryTable()
+// ****************************************************************************
+void MainWindow::populateUpdateHistoryTable()
+{
+    ui->updateHistoryTable->setRowCount(0);
+    QString updatesDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/updates";
+    QDir dir(updatesDirPath);
+    if (!dir.exists()) {
+        return;
+    }
+
+    QStringList filters;
+    filters << "*.zip";
+    QFileInfoList list = dir.entryInfoList(filters, QDir::Files | QDir::NoSymLinks, QDir::Time);
+
+    for (const QFileInfo &fileInfo : list) {
+        int row = ui->updateHistoryTable->rowCount();
+        ui->updateHistoryTable->insertRow(row);
+        QDateTime timestamp = QDateTime::fromString(fileInfo.baseName(), "yyyy-MM-dd_hh-mm-ss");
+        ui->updateHistoryTable->setItem(row, 0, new QTableWidgetItem(timestamp.toString("yyyy-MM-dd hh:mm:ss")));
+        ui->updateHistoryTable->setItem(row, 1, new QTableWidgetItem("Success")); // Assuming success for now
+    }
+}
+
+// ****************************************************************************
+// on_updateHistoryTable_cellDoubleClicked()
+// ****************************************************************************
+void MainWindow::on_updateHistoryTable_cellDoubleClicked(int row, int column)
+{
+    Q_UNUSED(column);
+    QTableWidgetItem *item = ui->updateHistoryTable->item(row, 0);
+    if (!item) return;
+
+    QDateTime timestamp = QDateTime::fromString(item->text(), "yyyy-MM-dd hh:mm:ss");
+    QString fileName = timestamp.toString("yyyy-MM-dd_hh-mm-ss") + ".zip";
+    QString reportPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/updates/" + fileName;
+
+    if (QFile::exists(reportPath)) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(reportPath));
+    } else {
+        QMessageBox::warning(this, tr("File Not Found"), tr("The report file could not be found."));
+    }
+}
+
+// ****************************************************************************
+// refreshUpdateHistoryButtonClicked()
+// ****************************************************************************
+void MainWindow::refreshUpdateHistoryButtonClicked()
+{
+    populateUpdateHistoryTable();
 }
 
 // ****************************************************************************
@@ -1188,6 +1304,11 @@ void MainWindow::runScheduledUpdate()
         command = "sudo";
         arguments.prepend("freshclam");
     }
+
+    // Save last invocation for report
+    m_lastCommand = command;
+    m_lastArguments = arguments;
+
     clamscanProcess->start(command, arguments);
 
     // After the first run, set the timer for the next day/week
@@ -1250,6 +1371,15 @@ void MainWindow::updateNowButtonClicked()
         return;
     }
 
+    // Create a temporary file to store the update log
+    m_logFile = new QTemporaryFile(this);
+    if (!m_logFile->open()) {
+        QMessageBox::critical(this, tr("File Error"), tr("Failed to create temporary log file."));
+        delete m_logFile;
+        m_logFile = nullptr;
+        return;
+    }
+
     ui->outputLog->clear();
     updateStatusBar("Update started...");
 
@@ -1264,6 +1394,11 @@ void MainWindow::updateNowButtonClicked()
         command = "sudo";
         arguments.prepend("freshclam");
     }
+
+    // Save last invocation for report
+    m_lastCommand = command;
+    m_lastArguments = arguments;
+
     clamscanProcess->start(command, arguments);
 }
 
