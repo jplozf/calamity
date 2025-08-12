@@ -1154,6 +1154,7 @@ void MainWindow::startScanScheduler()
         scanSchedulerTimer->start();
         qDebug() << "Scan scheduled to run at:" << nextRun;
         updateStatusBar(QString("Next scan scheduled for: %1").arg(nextRun.toString()));
+        ui->lblNextScanScheduled->setText(nextRun.toString());
     }
 }
 
@@ -1179,6 +1180,7 @@ void MainWindow::startUpdateScheduler()
         updateSchedulerTimer->start();
         qDebug() << "Update scheduled to run at:" << nextRun;
         updateStatusBar(QString("Next update scheduled for: %1").arg(nextRun.toString()));
+        ui->lblNextUpdateScheduled->setText(nextRun.toString());
     }
 }
 
