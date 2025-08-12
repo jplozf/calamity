@@ -97,16 +97,21 @@ protected:
 
 private slots:
     void handleFileDropped(const QString &path);
+    void onVersionCheckTimerTimeout();
 
 private:
     void loadEmailSettings();
     void saveEmailSettings();
+    void checkForUpdates();
+    void onVersionCheckFinished();
     Ui::MainWindow *ui;
     QProcess *clamscanProcess;
+    QProcess *m_updateCheckProcess;
     QSystemTrayIcon *trayIcon;
     QMenu *trayMenu;
     QTimer *scanSchedulerTimer;
     QTimer *updateSchedulerTimer;
+    QTimer *m_versionCheckTimer;
     QSettings *settings;
     QProcess *versionCheckProcess;
     bool m_recursiveScanEnabled;

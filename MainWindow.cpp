@@ -141,6 +141,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->saveEmailSettingsButton, &QPushButton::clicked, this, &MainWindow::onSaveEmailSettingsButton_clicked);
     connect(ui->testEmailButton, &QPushButton::clicked, this, &MainWindow::onTestEmailButton_clicked);
 
+    m_updateCheckProcess = new QProcess(this);
+    connect(m_updateCheckProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::onVersionCheckFinished);
+    checkForUpdates();
+
+    m_versionCheckTimer = new QTimer(this);
+    connect(m_versionCheckTimer, &QTimer::timeout, this, &MainWindow::onVersionCheckTimerTimeout);
+    m_versionCheckTimer->start(24 * 60 * 60 * 1000); // 24 hours
+
     // Initial UI state
     ui->stopButton->setEnabled(false);
     ui->quarantinePathLineEdit->setEnabled(false); // Disable quarantine path initially
@@ -1919,6 +1927,40 @@ void MainWindow::sendEmailReport(const QString &reportPath)
     smtpClient->sendMail(message);
 
     // message and its parts will be deleted by smtpClient
+}
+
+// ****************************************************************************
+// checkForUpdates()
+// ****************************************************************************
+void MainWindow::checkForUpdates()
+{
+    m_updateCheckProcess->start("git", QStringList() << "ls-remote" << "https://github.com/jplozf/calamity.git" << "HEAD");
+}
+
+// ****************************************************************************
+// onVersionCheckFinished()
+// ****************************************************************************
+void MainWindow::onVersionCheckFinished()
+{
+    QString output = m_updateCheckProcess->readAllStandardOutput();
+    if (output.isEmpty()) {
+        return; // Or handle error
+    }
+
+    QString remoteHash = output.left(7);
+    QString localHash = GIT_HASH;
+
+    if (remoteHash != localHash) {
+        QMessageBox::information(this, tr("New Version Available"), tr("A new version of Calamity is available on GitHub."));
+    }
+}
+
+// ****************************************************************************
+// onVersionCheckTimerTimeout()
+// ****************************************************************************
+void MainWindow::onVersionCheckTimerTimeout()
+{
+    checkForUpdates();
 }
 
 
