@@ -72,7 +72,7 @@ You first have to list all the IPC resources :
 ```bash
 lsipc -m
 ```
-Find the ID for the one which have a KEY with value different from 0 :
+Find the ID for the one which have a KEY with value equals to 0x512dd0f7 :
 ```bash
 KEY        ID         PERMS OWNER SIZE NATTCH STATUS  CTIME    CPID    LPID COMMAND
 0x00000000 819200 rw----rw-   jpl 7,5M      2 dest    08:12  724027    2585 /opt/Tabby/tabby --type=gpu-process --no-sandbox --crash
@@ -89,17 +89,17 @@ KEY        ID         PERMS OWNER SIZE NATTCH STATUS  CTIME    CPID    LPID COMM
 0x512dd0f7 983084 rw-------   jpl   1B      1         13:08 2569350 2598695 /home/jpl/Projets/Qt/calamity/build/Desktop_Qt_5_15_2_GC
 0x00000000 720950 rw-------   jpl 512K      2 dest   août09 1310710    2585 /usr/bin/galculator
 ```
-And then, you'll have to remove this IPC resource :
+And then, you'll have to remove this IPC resource providing this ID :
 ```bash
 ipcrm -m 983084
 ```
 
 ## TODO
 
-*   Multi paths scans.
-*   Improve audible alerts.
+*   Improve multi paths scans.
+*   Add audible alerts.
 *   Improve scheduling.
-*   Report by mail.
+*   Finalize report by mail.
 
 ## License
 

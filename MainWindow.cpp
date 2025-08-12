@@ -509,6 +509,19 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     Q_UNUSED(exitStatus); // Not using exitStatus directly, but keeping for signature
 
+    if (m_lastCommand.contains("freshclam")) {
+        if (m_logFile) {
+            m_logFile->seek(0);
+            QByteArray logData = m_logFile->readAll();
+            m_logFile->close();
+            delete m_logFile;
+            m_logFile = nullptr;
+            generateUpdateReport(logData);
+        }
+        updateStatusBar("Update finished.");
+        return;
+    }
+
     int numThreats = 0;
     QStringList threatDetails;
 
@@ -521,7 +534,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
         if (!logData.isEmpty()) {
             // Parse threats from log
-            QString logString = QString::fromUtf8(logData);
+            QString logString = QString::fromLatin1(logData);
             QRegularExpression threatLineRx("^(.*):\\s+(.*)\\s+FOUND");
             for (const QString& line : logString.split('\n', Qt::SkipEmptyParts)) {
                 QString trimmedLine = line.trimmed();
@@ -530,7 +543,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                     QString filePath = match.captured(1);
                     QString threatName = match.captured(2);
                     QString searchUrl = QString("https://www.google.com/search?q=site:clamav.net+%1").arg(QString(QUrl::toPercentEncoding(threatName)));
-                    threatDetails << QString("<tr><td>%1</td><td>%2</td><td><a href=\"%3\" target=\"_blank\">More info</a></td></tr>")
+                    threatDetails << QString("<tr><td>%1</td><td>%2</td><td><a href=\" %3 \" target=\"_blank\">More info</a></td></tr>")
                                      .arg(filePath.toHtmlEscaped(), threatName.toHtmlEscaped(), searchUrl);
                 }
             }
@@ -618,7 +631,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 html += "<h2>Summary</h2><table>";
                 html += QString("<tr><th>Targets</th><td>%1</td></tr>").arg(m_lastScanTargetsDisplay.toHtmlEscaped());
                 html += QString("<tr><th>Command</th><td><code>%1 %2</code></td></tr>").arg(m_lastCommand.toHtmlEscaped(), m_lastArguments.join(' ').toHtmlEscaped());
-                html += QString("<tr><th>Options</th><td><code>%1</code></td></tr>").arg(opts.join(' ').toHtmlEscaped());
+                // html += QString("<tr><th>Options</th><td><code>%1</code></td></tr>").arg(opts.join(' ').toHtmlEscaped());
                 html += QString("<tr><th>Application</th><td>Calamity %1.%2-%3</td></tr>").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH);
                 if (!m_clamavVersion.isEmpty()) {
                     html += QString("<tr><th>ClamAV Engine</th><td>%1</td></tr>").arg(m_clamavVersion.toHtmlEscaped());
@@ -661,7 +674,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 out << html;
                 reportFile.close();
 
-                QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+                QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/scans";
                 QDir scansDir(scansDirPath);
                 if (!scansDir.exists()) {
                     scansDir.mkpath(".");
@@ -732,6 +745,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
     ui->scanButton->setEnabled(true);
     ui->stopButton->setEnabled(false);
 }
+
 
 
 
@@ -869,7 +883,7 @@ void MainWindow::browseScheduledScanPathButtonClicked()
 // ****************************************************************************
 void MainWindow::openLastReportButtonClicked()
 {
-    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/scans";
     QDir dir(scansDirPath);
     if (!dir.exists()) {
         QMessageBox::information(this, tr("No Reports"), tr("No scan reports directory found."));
@@ -892,7 +906,7 @@ void MainWindow::openLastReportButtonClicked()
 // ****************************************************************************
 void MainWindow::openReportsFolderButtonClicked()
 {
-    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/scans";
     QDir dir(scansDirPath);
     if (!dir.exists()) {
         QMessageBox::information(this, tr("No Reports"), tr("No scan reports directory found."));
@@ -1148,6 +1162,15 @@ void MainWindow::runScheduledUpdate()
     if (clamscanProcess->state() == QProcess::Running) {
         qWarning() << "A scan is running. Skipping scheduled update.";
         updateStatusBar("Scheduled update skipped: Scan in progress.");
+        return;
+    }
+
+    // Create a temporary file to store the scan log
+    m_logFile = new QTemporaryFile(this);
+    if (!m_logFile->open()) {
+        QMessageBox::critical(this, tr("File Error"), tr("Failed to create temporary log file."));
+        delete m_logFile;
+        m_logFile = nullptr;
         return;
     }
 
@@ -1705,7 +1728,7 @@ void MainWindow::on_scanHistoryTable_cellDoubleClicked(int row, int column)
     }
 
     QString reportFileName = timestamp.toString("yyyy-MM-dd_hh-mm-ss") + ".zip";
-    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/scans";
+    QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/scans";
     QString reportFilePath = scansDirPath + "/" + reportFileName;
 
     QFile file(reportFilePath);
@@ -1963,5 +1986,91 @@ void MainWindow::onVersionCheckTimerTimeout()
     checkForUpdates();
 }
 
+// ****************************************************************************
+// generateUpdateReport()
+// ****************************************************************************
+void MainWindow::generateUpdateReport(const QByteArray &logData)
+{
+    QString reportPath = QDir::tempPath() + "/update_report.html";
+    QFile reportFile(reportPath);
+    if (reportFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QString hostname = QHostInfo::localHostName();
+        QString kernel = QSysInfo::prettyProductName() + " (" + QSysInfo::kernelType() + " " + QSysInfo::kernelVersion() + ")";
+        qint64 elapsedMs = m_scanTimer.isValid() ? m_scanTimer.elapsed() : 0;
 
+        // Optional embedded logo as data URI
+        QString logoTag;
+        {
+            QFile logo(":/icons/app_icon_64x64.png");
+            if (logo.open(QIODevice::ReadOnly)) {
+                const QByteArray logoData = logo.readAll();
+                const QString base64 = QString::fromLatin1(logoData.toBase64());
+                logoTag = QString("<img src=\"data:image/png;base64,%1\" alt=\"Calamity\" style=\"width:64px;height:64px;vertical-align:middle;margin-right:10px;\"/>").arg(base64);
+            }
+        }
 
+        // Build simple HTML
+        QString html;
+        html += "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Calamity Update Report</title>";
+        html += "<style>body{font-family:sans-serif;background:#FADA5E;color:#111}h1{margin-bottom:0}small{color:#555}table{border-collapse:collapse;margin:10px 0}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}code,pre{background:#f7f7f9;border:1px solid #e1e1e8;padding:8px;display:block;white-space:pre-wrap;}</style></head><body>";
+
+        if (!logoTag.isEmpty()) {
+            html += "<div style=\"display:flex;align-items:center;gap:10px;\">" + logoTag + "<div>";
+            html += "<h1>Calamity Update Report</h1>";
+            html += QString("<small>Generated: %1</small>").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+            html += "</div></div>";
+        } else {
+            html += "<h1>Calamity Update Report</h1>";
+            html += QString("<small>Generated: %1</small>").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+        }
+
+        html += "<h2>Summary</h2><table>";
+        html += QString("<tr><th>Command</th><td><code>%1 %2</code></td></tr>").arg(m_lastCommand.toHtmlEscaped()).arg(m_lastArguments.join(' ').toHtmlEscaped());
+        html += QString("<tr><th>Application</th><td>Calamity %1.%2-%3</td></tr>").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH);
+        if (!m_clamavVersion.isEmpty()) {
+            html += QString("<tr><th>ClamAV Engine</th><td>%1</td></tr>").arg(m_clamavVersion.toHtmlEscaped());
+        }
+        if (!m_signatureVersionInfo.isEmpty()) {
+            html += QString("<tr><th>Signatures</th><td>%1</td></tr>").arg(m_signatureVersionInfo.toHtmlEscaped());
+        }
+        html += QString("<tr><th>Hostname</th><td>%1</td></tr>").arg(hostname.toHtmlEscaped());
+        html += QString("<tr><th>OS/Kernel</th><td>%1</td></tr>").arg(kernel.toHtmlEscaped());
+        html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_scanStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
+        html += QString("<tr><th>Elapsed</th><td>%1 ms</td></tr>").arg(elapsedMs);
+        html += "</table>";
+
+        html += "<h2>Raw Output</h2><pre>" + QString::fromUtf8(logData).toHtmlEscaped() + "</pre>";
+        html += "</body></html>";
+
+        QTextStream out(&reportFile);
+        out.setCodec("UTF-8");
+        out << html;
+        reportFile.close();
+
+        QString updatesDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/updates";
+        QDir updatesDir(updatesDirPath);
+        if (!updatesDir.exists()) {
+            updatesDir.mkpath(".");
+        }
+
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
+        QString zipFileName = QString("%1.zip").arg(timestamp);
+        QString zipFilePath = updatesDirPath + "/" + zipFileName;
+
+        QProcess zipProcess;
+        zipProcess.start("zip", QStringList() << "-j" << zipFilePath << reportPath);
+        zipProcess.waitForFinished(-1);
+
+        if (zipProcess.exitCode() == 0) {
+            qDebug() << "Update log saved to:" << zipFilePath;
+            m_lastReportZipPath = zipFilePath;
+        } else {
+            qWarning() << "Could not save compressed update log to:" << zipFilePath;
+            qWarning() << "zip process error:" << zipProcess.readAllStandardError();
+        }
+
+        reportFile.remove();
+    } else {
+        qWarning() << "Could not create temporary report file:" << reportPath;
+    }
+}

@@ -163,6 +163,7 @@ private:
     void saveUiSettings();
     void loadUiSettings();
     void updateVersionInfo();
+    void generateUpdateReport(const QByteArray &logData);
 
     // Scan History related slots
     void clearHistoryButtonClicked();
