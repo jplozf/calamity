@@ -110,14 +110,17 @@ private:
     void saveEmailSettings();
     void checkForUpdates();
     void onVersionCheckFinished();
+    void onOnlineVersionCheckFinished();
     Ui::MainWindow *ui;
     QProcess *clamscanProcess;
     QProcess *m_updateCheckProcess;
+    QProcess *m_onlineVersionCheckProcess;
     QSystemTrayIcon *trayIcon;
     QMenu *trayMenu;
     QTimer *scanSchedulerTimer;
     QTimer *updateSchedulerTimer;
     QTimer *m_versionCheckTimer;
+    QTimer *m_updateVersionTimer;
     QSettings *settings;
     QProcess *versionCheckProcess;
     bool m_recursiveScanEnabled;

@@ -78,12 +78,14 @@ MainWindow::MainWindow(QWidget *parent)
     // Initialize QProcess
     clamscanProcess = new QProcess(this);
     versionCheckProcess = new QProcess(this);
+    m_onlineVersionCheckProcess = new QProcess(this);
 
     // Connect QProcess signals to slots
     connect(clamscanProcess, &QProcess::readyReadStandardOutput, this, &MainWindow::readClamscanOutput);
     connect(clamscanProcess, &QProcess::readyReadStandardError, this, &MainWindow::readClamscanOutput);
     connect(clamscanProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::clamscanFinished);
     connect(clamscanProcess, &QProcess::errorOccurred, this, &MainWindow::clamscanErrorOccurred);
+    connect(m_onlineVersionCheckProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::onOnlineVersionCheckFinished);
 
     // Connect LED status updates
     connect(ui->scanButton, &QPushButton::clicked, this, [this]() { updateScanStatusLed(true); });
@@ -155,6 +157,10 @@ MainWindow::MainWindow(QWidget *parent)
     m_versionCheckTimer = new QTimer(this);
     connect(m_versionCheckTimer, &QTimer::timeout, this, &MainWindow::onVersionCheckTimerTimeout);
     m_versionCheckTimer->start(24 * 60 * 60 * 1000); // 24 hours
+
+    m_updateVersionTimer = new QTimer(this);
+    connect(m_updateVersionTimer, &QTimer::timeout, this, &MainWindow::updateVersionInfo);
+    m_updateVersionTimer->start(15 * 60 * 1000); // 15 minutes
 
     // Initial UI state
     ui->stopButton->setEnabled(false);
@@ -1735,18 +1741,29 @@ void MainWindow::clearHistoryButtonClicked()
 void MainWindow::updateVersionInfo()
 {
     if (versionCheckProcess->state() == QProcess::Running) {
-        qDebug() << "Version check process already running.";
+        qDebug() << "ClamAV version check process already running.";
+        return;
+    }
+    if (m_onlineVersionCheckProcess->state() == QProcess::Running) {
+        qDebug() << "Online version check process already running.";
         return;
     }
 
     // Display Application Version
     if (ui->appVersionLabel) {
-        ui->appVersionLabel->setText(QString("Calamity Version: %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
+        ui->appVersionLabel->setText(QString("Calamity Version : %1.%2-%3")
+                                         .arg(APP_VERSION)
+                                         .arg(GIT_COMMIT_COUNT)
+                                         .arg(GIT_HASH));
     }
 
     // Clear previous info
-    if (clamavVersionLabel) clamavVersionLabel->setText(tr("ClamAV Version: Fetching..."));
-    if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: Fetching..."));
+    if (clamavVersionLabel)
+        clamavVersionLabel->setText(tr("ClamAV Version : Fetching..."));
+    if (signatureVersionLabel)
+        signatureVersionLabel->setText(tr("Local Signature Version : Fetching..."));
+    if (ui->lblCurrentUpdate)
+        ui->lblCurrentUpdate->setText(tr("Online Signature Version available : Fetching..."));
 
     // Fetch ClamAV version
     versionCheckProcess->start("clamscan", QStringList() << "--version");
@@ -1756,10 +1773,12 @@ void MainWindow::updateVersionInfo()
     QRegularExpressionMatch clamavMatch = clamavRx.match(clamavOutput);
     if (clamavMatch.hasMatch()) {
         m_clamavVersion = clamavMatch.captured(1);
-        if (clamavVersionLabel) clamavVersionLabel->setText(tr("ClamAV Version: %1").arg(m_clamavVersion));
+        if (clamavVersionLabel)
+            clamavVersionLabel->setText(tr("ClamAV Version : %1").arg(m_clamavVersion));
     } else {
         m_clamavVersion.clear();
-        if (clamavVersionLabel) clamavVersionLabel->setText(tr("ClamAV Version: Not Found"));
+        if (clamavVersionLabel)
+            clamavVersionLabel->setText(tr("ClamAV Version : Not Found"));
         qWarning() << "Could not parse ClamAV version from:" << clamavOutput;
     }
 
@@ -1771,13 +1790,71 @@ void MainWindow::updateVersionInfo()
         QString signatureVer = signatureMatch.captured(1);
         QString signatureDate = signatureMatch.captured(2).trimmed();
         m_signatureVersionInfo = tr("%1 (Last Updated: %2)").arg(signatureVer, signatureDate);
-        if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: %1").arg(m_signatureVersionInfo));
+        if (signatureVersionLabel)
+            signatureVersionLabel
+                ->setText(tr("Local Signature Version : %1").arg(m_signatureVersionInfo));
     } else {
         m_signatureVersionInfo.clear();
-        if (signatureVersionLabel) signatureVersionLabel->setText(tr("Signature Version: Not Found"));
+        if (signatureVersionLabel)
+            signatureVersionLabel->setText(tr("Local Signature Version : Not Found"));
         qWarning() << "Could not parse Signature version from clamscan output:" << clamavOutput;
     }
+
+    // Fetch online signature version
+    m_onlineVersionCheckProcess->start("host", QStringList() << "-t" << "txt" << "current.cvd.clamav.net");
 }
+
+// ****************************************************************************
+// onOnlineVersionCheckFinished()
+// ****************************************************************************
+void MainWindow::onOnlineVersionCheckFinished()
+{
+    QString output = m_onlineVersionCheckProcess->readAllStandardOutput();
+    qDebug() << "Online version check output: " << output;
+
+    // Expected format: "current.cvd.clamav.net descriptive text: version:date:time: sooner"
+    // We need the third field, which is the version number.
+    QRegularExpression rx(R"(current\.cvd\.clamav\.net.*?"[^:]*:[^:]*:(\d+):)");
+    QRegularExpressionMatch match = rx.match(output);
+
+    if (match.hasMatch()) {
+        QString onlineVersionStr = match.captured(1);
+        int onlineVersion = onlineVersionStr.toInt();
+        qDebug() << "Online version string: " << onlineVersionStr << ", int: " << onlineVersion;
+
+        // Extract local signature version for comparison
+        // m_signatureVersionInfo is in format "VERSION (Last Updated: DATE)"
+        QRegularExpression localSigRx(R"((?:ClamAV \d+\.\d+\.\d+/)?(\d+) \(Last Updated: .*\))");
+        QRegularExpressionMatch localSigMatch = localSigRx.match(m_signatureVersionInfo);
+        int localVersion = 0;
+        if (localSigMatch.hasMatch()) {
+            localVersion = localSigMatch.captured(1).toInt();
+        }
+        qDebug() << "Local signature info: " << m_signatureVersionInfo << ", extracted local version: " << localVersion;
+
+        if (ui->lblCurrentUpdate) {
+            if (onlineVersion > localVersion) {
+                ui->lblCurrentUpdate
+                    ->setText(tr("Online Signature Version available : %1 (New version available!)")
+                                  .arg(onlineVersionStr));
+            } else if (onlineVersion == localVersion && localVersion != 0) {
+                ui->lblCurrentUpdate
+                    ->setText(tr("Online Signature Version available : %1 (Up to date)")
+                                  .arg(onlineVersionStr));
+            } else {
+                ui->lblCurrentUpdate
+                    ->setText(tr("Online Signature Version available : %1").arg(onlineVersionStr));
+            }
+        }
+    } else {
+        if (ui->lblCurrentUpdate) {
+            ui->lblCurrentUpdate
+                ->setText(tr("Online Signature Version available : Could not fetch"));
+        }
+        qWarning() << "Could not parse online signature version from:" << output;
+    }
+}
+
 
 void MainWindow::scheduledRecursiveScanCheckBox_toggled(bool checked)
 {
