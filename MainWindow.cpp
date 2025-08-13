@@ -1270,6 +1270,11 @@ void MainWindow::runScheduledScan()
     scanSchedulerTimer->setInterval(24 * 60 * 60 * 1000); // Reschedule for next day
     scanSchedulerTimer->setSingleShot(false); // Make it repeating
     scanSchedulerTimer->start();
+
+    // Update information for next run
+    QDateTime nextRun = QDateTime(QDateTime::currentDateTime());
+    nextRun = nextRun.addMSecs(scanSchedulerTimer->interval());
+    ui->lblNextScanScheduled->setText(nextRun.toString());
 }
 
 // ****************************************************************************
@@ -1318,6 +1323,11 @@ void MainWindow::runScheduledUpdate()
     updateSchedulerTimer->setInterval(24 * 60 * 60 * 1000); // Reschedule for next day
     updateSchedulerTimer->setSingleShot(false); // Make it repeating
     updateSchedulerTimer->start();
+
+    // Update information for next run
+    QDateTime nextRun = QDateTime(QDateTime::currentDateTime());
+    nextRun = nextRun.addMSecs(updateSchedulerTimer->interval());
+    ui->lblNextUpdateScheduled->setText(nextRun.toString());
 }
 
 // ****************************************************************************
