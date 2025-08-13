@@ -96,6 +96,7 @@ private slots:
     void openUpdateReportsFolderButtonClicked();
     void on_updateHistoryTable_cellDoubleClicked(int row, int column);
     void refreshUpdateHistoryButtonClicked();
+    QString timeConversion(int msecs);
 
 protected:
     void closeEvent(QCloseEvent *event) override;

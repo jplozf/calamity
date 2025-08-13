@@ -651,7 +651,8 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 html += QString("<tr><th>Hostname</th><td>%1</td></tr>").arg(hostname.toHtmlEscaped());
                 html += QString("<tr><th>OS/Kernel</th><td>%1</td></tr>").arg(kernel.toHtmlEscaped());
                 html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_scanStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
-                html += QString("<tr><th>Elapsed</th><td>%1 ms</td></tr>").arg(elapsedMs);
+                html += QString("<tr><th>Elapsed</th><td>%1</td></tr>")
+                            .arg(timeConversion(elapsedMs));
                 html += "</table>";
 
                 html += "<h2>Settings</h2><table>";
@@ -2184,7 +2185,7 @@ void MainWindow::generateUpdateReport(const QByteArray &logData)
         html += QString("<tr><th>Hostname</th><td>%1</td></tr>").arg(hostname.toHtmlEscaped());
         html += QString("<tr><th>OS/Kernel</th><td>%1</td></tr>").arg(kernel.toHtmlEscaped());
         html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_scanStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
-        html += QString("<tr><th>Elapsed</th><td>%1 ms</td></tr>").arg(elapsedMs);
+        html += QString("<tr><th>Elapsed</th><td>%1</td></tr>").arg(timeConversion(elapsedMs));
         html += "</table>";
 
         html += "<h2>Raw Output</h2><pre>" + QString::fromUtf8(logData).toHtmlEscaped() + "</pre>";
@@ -2221,4 +2222,24 @@ void MainWindow::generateUpdateReport(const QByteArray &logData)
     } else {
         qWarning() << "Could not create temporary report file:" << reportPath;
     }
+}
+
+// ****************************************************************************
+// timeConversion()
+// ****************************************************************************
+QString MainWindow::timeConversion(int msecs)
+{
+    QString formattedTime;
+
+    int hours = msecs / (1000 * 60 * 60);
+    int minutes = (msecs - (hours * 1000 * 60 * 60)) / (1000 * 60);
+    int seconds = (msecs - (minutes * 1000 * 60) - (hours * 1000 * 60 * 60)) / 1000;
+    int milliseconds = msecs - (seconds * 1000) - (minutes * 1000 * 60) - (hours * 1000 * 60 * 60);
+
+    formattedTime.append(QString("%1").arg(hours, 2, 10, QLatin1Char('0')) + ":"
+                         + QString("%1").arg(minutes, 2, 10, QLatin1Char('0')) + ":"
+                         + QString("%1").arg(seconds, 2, 10, QLatin1Char('0')) + ":"
+                         + QString("%1").arg(milliseconds, 3, 10, QLatin1Char('0')));
+
+    return formattedTime;
 }
