@@ -550,7 +550,8 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 if (match.hasMatch()) {
                     QString filePath = match.captured(1);
                     QString threatName = match.captured(2);
-                    QString searchUrl = QString("https://www.google.com/search?q=site:clamav.net+%1").arg(QString(QUrl::toPercentEncoding(threatName)));
+                    QString searchUrl = QString("https://www.google.com/search?q=%1")
+                                            .arg(QString(QUrl::toPercentEncoding(threatName)));
                     threatDetails << QString("<tr><td>%1</td><td>%2</td><td><a href=\" %3 \" target=\"_blank\">More info</a></td></tr>")
                                      .arg(filePath.toHtmlEscaped(), threatName.toHtmlEscaped(), searchUrl);
                 }
