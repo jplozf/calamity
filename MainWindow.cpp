@@ -806,7 +806,7 @@ void MainWindow::clamscanErrorOccurred(QProcess::ProcessError error)
 // ****************************************************************************
 void MainWindow::updateStatusBar(const QString &message)
 {
-    ui->statusbar->showMessage(message);
+    ui->statusbar->showMessage(message, 3000);
 }
 
 // ****************************************************************************
