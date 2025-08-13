@@ -2236,10 +2236,10 @@ QString MainWindow::timeConversion(int msecs)
     int seconds = (msecs - (minutes * 1000 * 60) - (hours * 1000 * 60 * 60)) / 1000;
     int milliseconds = msecs - (seconds * 1000) - (minutes * 1000 * 60) - (hours * 1000 * 60 * 60);
 
-    formattedTime.append(QString("%1").arg(hours, 2, 10, QLatin1Char('0')) + ":"
-                         + QString("%1").arg(minutes, 2, 10, QLatin1Char('0')) + ":"
-                         + QString("%1").arg(seconds, 2, 10, QLatin1Char('0')) + ":"
-                         + QString("%1").arg(milliseconds, 3, 10, QLatin1Char('0')));
+    formattedTime.append(
+        QString("%1").arg(hours) + " hours, " + QString("%1").arg(minutes, 2, 10, QLatin1Char('0'))
+        + " minutes, " + QString("%1").arg(seconds, 2, 10, QLatin1Char('0')) + " seconds, "
+        + QString("%1").arg(milliseconds, 3, 10, QLatin1Char('0')) + " milliseconds.");
 
     return formattedTime;
 }
