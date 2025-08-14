@@ -162,7 +162,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_updateVersionTimer = new QTimer(this);
     connect(m_updateVersionTimer, &QTimer::timeout, this, &MainWindow::updateVersionInfo);
-    m_updateVersionTimer->start(15 * 60 * 1000); // 15 minutes
 
     // Initial UI state
     ui->stopButton->setEnabled(false);
@@ -191,6 +190,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupSchedulers();
     loadUiSettings(); // Load UI settings on startup
     loadEmailSettings(); // Load email settings on startup
+    m_updateVersionTimer->start(m_versionCheckInterval * 60 * 1000); // Start timer with loaded value
     moveInfectedCheckBox_toggled(ui->moveInfectedCheckBox->isChecked()); // Update quarantine path line edit state based on loaded setting
     loadExclusionSettings(); // Load exclusion settings on startup
     loadScanHistory(); // Load scan history on startup
@@ -1515,6 +1515,10 @@ void MainWindow::saveUiSettings()
     settings->setValue("detectPua", ui->detectPuaCheckBox->isChecked());
     settings->endGroup();
 
+    settings->beginGroup("General");
+    settings->setValue("VersionCheckInterval", m_versionCheckInterval);
+    settings->endGroup();
+
     settings->sync();
 }
 
@@ -1556,6 +1560,10 @@ void MainWindow::loadUiSettings()
     ui->heuristicAlertsCheckBox->setChecked(settings->value("heuristicAlerts", false).toBool());
     ui->encryptedDocumentsAlertsCheckBox->setChecked(settings->value("encryptedDocumentsAlerts", false).toBool());
     ui->detectPuaCheckBox->setChecked(settings->value("detectPua", false).toBool());
+    settings->endGroup();
+
+    settings->beginGroup("General");
+    m_versionCheckInterval = settings->value("VersionCheckInterval", 15).toInt();
     settings->endGroup();
 
     settings->sync();

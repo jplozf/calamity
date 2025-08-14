@@ -144,6 +144,7 @@ private:
     bool m_scheduledBellOnVirusEnabled;
     bool m_scheduledMoveInfectedEnabled;
     bool m_scheduledRemoveInfectedEnabled;
+    int m_versionCheckInterval;
 
     // Version Info Labels (assuming these are in .ui file)
     QLabel *appVersionLabel;
