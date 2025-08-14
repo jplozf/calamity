@@ -132,6 +132,8 @@ private:
     QString m_lastCommand;            // The executable used (e.g., clamscan or sudo)
     QStringList m_lastArguments;      // Full argument list used for the last run
     QElapsedTimer m_scanTimer;        // Measures elapsed scan time
+    QElapsedTimer m_updateTimer;      // Measures elapsed update time
+    QDateTime m_updateStartedAt;      // Stores the start time of the update
     QDateTime m_scanStartedAt;        // Start timestamp
     QString m_lastReportZipPath;      // Path to last generated report zip
     bool m_scheduledRecursiveScanEnabled;

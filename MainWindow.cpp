@@ -1305,6 +1305,9 @@ void MainWindow::runScheduledUpdate()
         return;
     }
 
+    m_updateTimer.start(); // Start the update timer
+    m_updateStartedAt = QDateTime::currentDateTime(); // Record update start time
+
     ui->outputLog->clear();
     updateStatusBar("Scheduled update started...");
 
@@ -1399,6 +1402,9 @@ void MainWindow::updateNowButtonClicked()
         m_logFile = nullptr;
         return;
     }
+
+    m_updateTimer.start(); // Start the update timer
+    m_updateStartedAt = QDateTime::currentDateTime(); // Record update start time
 
     ui->outputLog->clear();
     updateStatusBar("Update started...");
@@ -2222,7 +2228,7 @@ void MainWindow::generateUpdateReport(const QByteArray &logData)
     if (reportFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QString hostname = QHostInfo::localHostName();
         QString kernel = QSysInfo::prettyProductName() + " (" + QSysInfo::kernelType() + " " + QSysInfo::kernelVersion() + ")";
-        qint64 elapsedMs = m_scanTimer.isValid() ? m_scanTimer.elapsed() : 0;
+        qint64 elapsedMs = m_updateTimer.isValid() ? m_updateTimer.elapsed() : 0;
 
         // Optional embedded logo as data URI
         QString logoTag;
@@ -2261,7 +2267,7 @@ void MainWindow::generateUpdateReport(const QByteArray &logData)
         }
         html += QString("<tr><th>Hostname</th><td>%1</td></tr>").arg(hostname.toHtmlEscaped());
         html += QString("<tr><th>OS/Kernel</th><td>%1</td></tr>").arg(kernel.toHtmlEscaped());
-        html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_scanStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
+        html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_updateStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
         html += QString("<tr><th>Elapsed</th><td>%1</td></tr>").arg(timeConversion(elapsedMs));
         html += "</table>";
 
