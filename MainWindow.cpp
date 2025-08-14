@@ -142,6 +142,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->updateHistoryTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::on_updateHistoryTable_cellDoubleClicked);
     connect(ui->refreshUpdateHistoryButton, &QPushButton::clicked, this, &MainWindow::refreshUpdateHistoryButtonClicked);
 
+    connect(ui->clearUpdatesHistoryButton, &QPushButton::clicked, this, &MainWindow::clearUpdatesHistoryButtonClicked);
+
     // Connect fileDropped signal from custom QTextEdit
     connect(ui->outputLog, &ScanOutputTextEdit::fileDropped, this, &MainWindow::handleFileDropped);
 
@@ -1730,14 +1732,60 @@ void MainWindow::displayScanHistory()
 void MainWindow::clearHistoryButtonClicked()
 {
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, tr("Clear Scan History"),
-                                  tr("Are you sure you want to clear all scan history?"),
-                                  QMessageBox::Yes|QMessageBox::No);
+    reply = QMessageBox::question(this,
+                                  tr("Clear Scan History"),
+                                  tr("Are you sure you want to clear all scan history and "
+                                     "associated reports ?\nThis action cannot be undone."),
+                                  QMessageBox::Yes | QMessageBox::No);
     if (reply == QMessageBox::Yes) {
+        // Clear the in-memory history
         scanHistory.clear();
+        // Clear the table view
         ui->scanHistoryTable->setRowCount(0);
-        saveScanHistory(); // Save empty history
+        // Save the empty history to the JSON file
+        saveScanHistory();
+
+        // Delete the report files
+        QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/scans";
+        QDir dir(scansDirPath);
+        if (dir.exists()) {
+            dir.setNameFilters(QStringList() << "*.zip");
+            dir.setFilter(QDir::Files);
+            for(const QString &dirFile : dir.entryList()) {
+                dir.remove(dirFile);
+            }
+        }
         updateStatusBar("Scan history cleared.");
+    }
+}
+
+// ****************************************************************************
+// clearUpdatesHistoryButtonClicked()
+// ****************************************************************************
+void MainWindow::clearUpdatesHistoryButtonClicked()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this,
+                                  tr("Clear Update History"),
+                                  tr("Are you sure you want to clear all update history and "
+                                     "associated reports ?\nThis "
+                                     "action cannot be undone."),
+                                  QMessageBox::Yes | QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+        // Clear the table view
+        ui->updateHistoryTable->setRowCount(0);
+
+        // Delete the report files
+        QString updatesDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/updates";
+        QDir dir(updatesDirPath);
+        if (dir.exists()) {
+            dir.setNameFilters(QStringList() << "*.zip");
+            dir.setFilter(QDir::Files);
+            for(const QString &dirFile : dir.entryList()) {
+                dir.remove(dirFile);
+            }
+        }
+        updateStatusBar("Update history cleared.");
     }
 }
 

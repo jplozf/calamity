@@ -182,6 +182,9 @@ private:
     void clearHistoryButtonClicked();
     void on_scanHistoryTable_cellDoubleClicked(int row, int column);
 
+    // Update History related slots
+    void clearUpdatesHistoryButtonClicked();
+
     // Structure to hold scan results
     struct ScanResult {
         QDateTime timestamp;
