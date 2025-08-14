@@ -158,7 +158,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_versionCheckTimer = new QTimer(this);
     connect(m_versionCheckTimer, &QTimer::timeout, this, &MainWindow::onVersionCheckTimerTimeout);
-    m_versionCheckTimer->start(24 * 60 * 60 * 1000); // 24 hours
 
     m_updateVersionTimer = new QTimer(this);
     connect(m_updateVersionTimer, &QTimer::timeout, this, &MainWindow::updateVersionInfo);
@@ -190,6 +189,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupSchedulers();
     loadUiSettings(); // Load UI settings on startup
     loadEmailSettings(); // Load email settings on startup
+    m_versionCheckTimer->start(m_fullVersionCheckInterval * 60 * 1000); // Start full check timer
     m_updateVersionTimer->start(m_versionCheckInterval * 60 * 1000); // Start timer with loaded value
     moveInfectedCheckBox_toggled(ui->moveInfectedCheckBox->isChecked()); // Update quarantine path line edit state based on loaded setting
     loadExclusionSettings(); // Load exclusion settings on startup
@@ -1517,6 +1517,7 @@ void MainWindow::saveUiSettings()
 
     settings->beginGroup("General");
     settings->setValue("VersionCheckInterval", m_versionCheckInterval);
+    settings->setValue("FullVersionCheckInterval", m_fullVersionCheckInterval);
     settings->endGroup();
 
     settings->sync();
@@ -1564,6 +1565,7 @@ void MainWindow::loadUiSettings()
 
     settings->beginGroup("General");
     m_versionCheckInterval = settings->value("VersionCheckInterval", 15).toInt();
+    m_fullVersionCheckInterval = settings->value("FullVersionCheckInterval", 1440).toInt();
     settings->endGroup();
 
     settings->sync();
