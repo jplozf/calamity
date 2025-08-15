@@ -1900,16 +1900,20 @@ void MainWindow::onOnlineVersionCheckFinished()
 
         if (ui->lblCurrentUpdate) {
             if (onlineVersion > localVersion) {
-                ui->lblCurrentUpdate
-                    ->setText(tr("Online Signature Version available : %1 (New version available!)")
-                                  .arg(onlineVersionStr));
+                ui->lblCurrentUpdate->setText(
+                    tr("Online Signatures Version available : %1 (New version available!)")
+                        .arg(onlineVersionStr));
+                trayIcon->showMessage("Calamity",
+                                      tr("New Signatures Version avaialable online."),
+                                      QSystemTrayIcon::Warning,
+                                      2000);
             } else if (onlineVersion == localVersion && localVersion != 0) {
                 ui->lblCurrentUpdate
-                    ->setText(tr("Online Signature Version available : %1 (Up to date)")
+                    ->setText(tr("Online Signatures Version available : %1 (Up to date)")
                                   .arg(onlineVersionStr));
             } else {
                 ui->lblCurrentUpdate
-                    ->setText(tr("Online Signature Version available : %1").arg(onlineVersionStr));
+                    ->setText(tr("Online Signatures Version available : %1").arg(onlineVersionStr));
             }
         }
     } else {
@@ -2267,6 +2271,10 @@ void MainWindow::onVersionCheckFinished()
 
     if (remoteHash != localHash) {
         QMessageBox::information(this, tr("New Version Available"), tr("A new version of Calamity is available on GitHub."));
+        trayIcon->showMessage("Calamity",
+                              tr("A new version of Calamity is available on GitHub."),
+                              QSystemTrayIcon::Warning,
+                              2000);
     }
 }
 
