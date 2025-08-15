@@ -659,6 +659,8 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                 html += QString("<tr><th>Hostname</th><td>%1</td></tr>").arg(hostname.toHtmlEscaped());
                 html += QString("<tr><th>OS/Kernel</th><td>%1</td></tr>").arg(kernel.toHtmlEscaped());
                 html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_scanStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
+                html += QString("<tr><th>Ended</th><td>%1</td></tr>")
+                            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
                 html += QString("<tr><th>Elapsed</th><td>%1</td></tr>")
                             .arg(timeConversion(elapsedMs));
                 html += "</table>";
@@ -2326,6 +2328,8 @@ void MainWindow::generateUpdateReport(const QByteArray &logData)
         html += QString("<tr><th>Hostname</th><td>%1</td></tr>").arg(hostname.toHtmlEscaped());
         html += QString("<tr><th>OS/Kernel</th><td>%1</td></tr>").arg(kernel.toHtmlEscaped());
         html += QString("<tr><th>Started</th><td>%1</td></tr>").arg(m_updateStartedAt.toString("yyyy-MM-dd hh:mm:ss"));
+        html += QString("<tr><th>Ended</th><td>%1</td></tr>")
+                    .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
         html += QString("<tr><th>Elapsed</th><td>%1</td></tr>").arg(timeConversion(elapsedMs));
         html += "</table>";
 
