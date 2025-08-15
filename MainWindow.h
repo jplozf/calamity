@@ -94,9 +94,10 @@ private slots:
     void openScanReportFolderButtonClicked();
     void openLastUpdateReportButtonClicked();
     void openUpdateReportsFolderButtonClicked();
+    void openStatusPageButtonClicked();
     void on_updateHistoryTable_cellDoubleClicked(int row, int column);
     void refreshUpdateHistoryButtonClicked();
-    QString timeConversion(int msecs);
+    QString timeConversion(qint64 msecs);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -135,7 +136,7 @@ private:
     QElapsedTimer m_updateTimer;      // Measures elapsed update time
     QDateTime m_updateStartedAt;      // Stores the start time of the update
     QDateTime m_scanStartedAt;        // Start timestamp
-    QString m_lastReportZipPath;      // Path to last generated report zip
+    QString m_lastReportPath;      // Path to last generated report
     bool m_scheduledRecursiveScanEnabled;
     bool m_scheduledHeuristicAlertsEnabled;
     bool m_scheduledEncryptedDocumentsAlertsEnabled;
@@ -178,7 +179,8 @@ private:
     void updateVersionInfo();
     void generateUpdateReport(const QByteArray &logData);
     void populateUpdateHistoryTable();
-    QString m_lastUpdateReportZipPath;
+    void generateStatusPage();
+    QString m_lastUpdateReportPath;
 
     // Scan History related slots
     void clearHistoryButtonClicked();
@@ -196,11 +198,19 @@ private:
     };
     QList<ScanResult> scanHistory; // List to store scan results
 
+    // Structure to hold update results
+    struct UpdateResult {
+        QDateTime timestamp;
+        QString status;
+    };
+    QList<UpdateResult> updateHistory; // List to store update results
+
     void loadExclusionSettings();
     void saveExclusionSettings();
     void loadScanHistory(); // New: Load scan history
     void saveScanHistory(); // New: Save scan history
     void addScanResult(const QString &path, const QString &status, int threats); // New: Add scan result to history
+    void addUpdateResult(const QString &status); // New: Add update result to history
     void displayScanHistory(); // New: Display history in table
 
     // Helpers for multi-path support
