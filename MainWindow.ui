@@ -448,6 +448,13 @@
             </layout>
            </item>
            <item>
+            <widget class="QCheckBox" name="asapUpdateCheckBox">
+             <property name="text">
+              <string>ASAP</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_19">
              <item>
               <widget class="QPushButton" name="refreshUpdateHistoryButton">

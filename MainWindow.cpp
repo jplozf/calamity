@@ -171,6 +171,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Connect new status page button
     connect(ui->openStatusPageButton, &QPushButton::clicked, this, &MainWindow::openStatusPageButtonClicked);
 
+    // Connect ASAP update checkbox
+    connect(ui->asapUpdateCheckBox, &QCheckBox::stateChanged, this, &MainWindow::on_asapUpdateCheckBox_stateChanged);
+
     // Initial UI state
     ui->stopButton->setEnabled(false);
     ui->quarantinePathLineEdit->setEnabled(false); // Disable quarantine path initially
@@ -1195,6 +1198,10 @@ void MainWindow::startScanScheduler()
 void MainWindow::startUpdateScheduler()
 {
     updateSchedulerTimer->stop();
+    if (ui->asapUpdateCheckBox->isChecked()) {
+        ui->lblNextUpdateScheduled->setText(tr("ASAP +/- %1 minutes").arg(ui->versionCheckIntervalLineEdit->text()));
+        return;
+    }
     if (ui->enableUpdateScheduleCheckBox->isChecked()) {
         QDateTime now = QDateTime::currentDateTime();
         QTime scheduledTime = ui->updateTimeEdit->time();
@@ -1546,6 +1553,7 @@ void MainWindow::saveUiSettings()
     }
     settings->setValue("VersionCheckInterval", m_versionCheckInterval);
     settings->setValue("FullVersionCheckInterval", m_fullVersionCheckInterval);
+    settings->setValue("AsapUpdate", ui->asapUpdateCheckBox->isChecked());
     settings->endGroup();
 
     settings->sync();
@@ -1597,13 +1605,15 @@ void MainWindow::loadUiSettings()
     if (m_versionCheckIntervalLineEdit) {
         m_versionCheckIntervalLineEdit->setText(QString::number(m_versionCheckInterval));
     }
+    ui->asapUpdateCheckBox->setChecked(settings->value("AsapUpdate", false).toBool());
     settings->endGroup();
 
     settings->sync();
 }
 
-
-
+// ****************************************************************************
+// loadEmailSettings()
+// ****************************************************************************
 void MainWindow::loadEmailSettings()
 {
     settings->beginGroup("Email");
@@ -1616,6 +1626,9 @@ void MainWindow::loadEmailSettings()
     settings->endGroup();
 }
 
+// ****************************************************************************
+// saveEmailSettings()
+// ****************************************************************************
 void MainWindow::saveEmailSettings()
 {
     settings->beginGroup("Email");
@@ -1922,9 +1935,9 @@ void MainWindow::onOnlineVersionCheckFinished()
     QString output = m_onlineVersionCheckProcess->readAllStandardOutput();
     qDebug() << "Online version check output: " << output;
 
-    // Expected format: "current.cvd.clamav.net descriptive text: version:date:time: sooner"
-    // We need the third field, which is the version number.
-    QRegularExpression rx(R"(current\.cvd\.clamav\.net.*?"[^:]*:[^:]*:(\d+):)");
+    // Expected format: "current.cvd.clamav.net descriptive text "0.103.9:62:27032:1689253200:1:90:49192:336""
+    // We need the third field from the quoted string.
+    QRegularExpression rx(R"("[^:]*:[^:]*:(\d+):[^"]*")");
     QRegularExpressionMatch match = rx.match(output);
 
     if (match.hasMatch()) {
@@ -1951,6 +1964,9 @@ void MainWindow::onOnlineVersionCheckFinished()
                                       tr("New Signatures Version avaialable online."),
                                       QSystemTrayIcon::Warning,
                                       2000);
+                if (ui->asapUpdateCheckBox->isChecked()) {
+                    updateNowButtonClicked();
+                }
             } else if (onlineVersion == localVersion && localVersion != 0) {
                 ui->lblCurrentUpdate
                     ->setText(tr("Online Signatures Version available : %1 (Up to date)")
@@ -1971,37 +1987,49 @@ void MainWindow::onOnlineVersionCheckFinished()
     generateStatusPage();
 }
 
-
+// ****************************************************************************
+// scheduledRecursiveScanCheckBox_toggled()
+// ****************************************************************************
 void MainWindow::scheduledRecursiveScanCheckBox_toggled(bool checked)
 {
     m_scheduledRecursiveScanEnabled = checked;
 }
 
+// ****************************************************************************
+// scheduledHeuristicAlertsCheckBox_toggled()
+// ****************************************************************************
 void MainWindow::scheduledHeuristicAlertsCheckBox_toggled(bool checked)
 {
     m_scheduledHeuristicAlertsEnabled = checked;
 }
 
+// ****************************************************************************
+// scheduledEncryptedDocumentsAlertsCheckBox_toggled()
+// ****************************************************************************
 void MainWindow::scheduledEncryptedDocumentsAlertsCheckBox_toggled(bool checked)
 {
     m_scheduledEncryptedDocumentsAlertsEnabled = checked;
 }
 
+// ****************************************************************************
+// scheduledDetectPuaCheckBox_toggled()
+// ****************************************************************************
 void MainWindow::scheduledDetectPuaCheckBox_toggled(bool checked)
 {
     m_scheduledDetectPuaEnabled = checked;
 }
 
 // ****************************************************************************
-// New Scheduled Scan Option Slots
+// scheduledScanArchivesCheckBox_toggled
 // ****************************************************************************
 void MainWindow::scheduledScanArchivesCheckBox_toggled(bool checked)
 {
     m_scheduledScanArchivesEnabled = checked;
 }
 
- 
-
+// ****************************************************************************
+// scheduledMoveInfectedCheckBox_toggled()
+// ****************************************************************************
 void MainWindow::scheduledMoveInfectedCheckBox_toggled(bool checked)
 {
     m_scheduledMoveInfectedEnabled = checked;
@@ -2009,6 +2037,9 @@ void MainWindow::scheduledMoveInfectedCheckBox_toggled(bool checked)
     ui->browseScheduledQuarantineButton->setEnabled(checked);
 }
 
+// ****************************************************************************
+// scheduledRemoveInfectedCheckBox_toggled()
+// ****************************************************************************
 void MainWindow::scheduledRemoveInfectedCheckBox_toggled(bool checked)
 {
     m_scheduledRemoveInfectedEnabled = checked;
@@ -2553,6 +2584,28 @@ void MainWindow::generateStatusPage()
     qDebug() << "Status page generated at:" << statusFilePath;
 }
 
+
+// ****************************************************************************
+// on_asapUpdateCheckBox_stateChanged()
+// ****************************************************************************
+void MainWindow::on_asapUpdateCheckBox_stateChanged(int state)
+{
+    bool checked = (state == Qt::Checked);
+    ui->enableUpdateScheduleCheckBox->setDisabled(checked);
+    ui->updateFrequencyComboBox->setDisabled(checked);
+    ui->updateTimeEdit->setDisabled(checked);
+
+    if (checked) {
+        // When ASAP is checked, we can trigger an immediate online version check.
+        // The existing timer-based check logic can be reused or adapted.
+        // For now, let's just call the online version check.
+        updateVersionInfo();
+        ui->lblNextUpdateScheduled->setText(tr("ASAP +/- %1 minutes").arg(ui->versionCheckIntervalLineEdit->text()));
+    } else {
+        // Revert to the scheduled update time if unchecked
+        startUpdateScheduler();
+    }
+}
 
 // ****************************************************************************
 // timeConversion()

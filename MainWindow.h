@@ -103,6 +103,7 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
+    void on_asapUpdateCheckBox_stateChanged(int state);
     void handleFileDropped(const QString &path);
     void onVersionCheckTimerTimeout();
     void onVersionCheckIntervalLineEditChanged();
