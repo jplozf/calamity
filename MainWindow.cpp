@@ -545,6 +545,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
             delete m_logFile;
             m_logFile = nullptr;
             generateUpdateReport(logData);
+            populateUpdateHistoryTable();
         }
         updateStatusBar("Update finished.");
         return;
@@ -972,7 +973,7 @@ void MainWindow::openLastUpdateReportButtonClicked()
         return;
     }
     QStringList filters;
-    filters << "*.zip";
+    filters << "*.html";
     QFileInfoList list = dir.entryInfoList(filters,
                                            QDir::Files | QDir::NoSymLinks,
                                            QDir::Time | QDir::Reversed);
@@ -1025,7 +1026,7 @@ void MainWindow::populateUpdateHistoryTable()
     }
 
     QStringList filters;
-    filters << "*.zip";
+    filters << "*.html";
     QFileInfoList list = dir.entryInfoList(filters, QDir::Files | QDir::NoSymLinks, QDir::Time);
 
     for (const QFileInfo &fileInfo : list) {
@@ -1047,7 +1048,7 @@ void MainWindow::on_updateHistoryTable_cellDoubleClicked(int row, int column)
     if (!item) return;
 
     QDateTime timestamp = QDateTime::fromString(item->text(), "yyyy-MM-dd hh:mm:ss");
-    QString fileName = timestamp.toString("yyyy-MM-dd_hh-mm-ss") + ".zip";
+    QString fileName = timestamp.toString("yyyy-MM-dd_hh-mm-ss") + ".html";
     QString reportPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/updates/" + fileName;
 
     if (QFile::exists(reportPath)) {
