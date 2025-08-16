@@ -2596,6 +2596,7 @@ void MainWindow::on_asapUpdateCheckBox_stateChanged(int state)
     ui->updateTimeEdit->setDisabled(checked);
 
     if (checked) {
+        updateSchedulerTimer->stop();
         // When ASAP is checked, we can trigger an immediate online version check.
         // The existing timer-based check logic can be reused or adapted.
         // For now, let's just call the online version check.
