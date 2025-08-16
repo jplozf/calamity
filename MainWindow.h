@@ -105,6 +105,7 @@ protected:
 private slots:
     void handleFileDropped(const QString &path);
     void onVersionCheckTimerTimeout();
+    void onVersionCheckIntervalLineEditChanged();
 
 private:
     void loadEmailSettings();
@@ -147,6 +148,8 @@ private:
     bool m_scheduledRemoveInfectedEnabled;
     int m_versionCheckInterval;
     int m_fullVersionCheckInterval;
+
+    QLineEdit *m_versionCheckIntervalLineEdit;
 
     // Version Info Labels (assuming these are in .ui file)
     QLabel *appVersionLabel;

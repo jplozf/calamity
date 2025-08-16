@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     , signatureVersionLabel(nullptr)
     , scanStatusLed(nullptr)
     , smtpClient(nullptr) // Initialize smtpClient
+    , m_versionCheckIntervalLineEdit(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle(QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
@@ -162,6 +163,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_updateVersionTimer = new QTimer(this);
     connect(m_updateVersionTimer, &QTimer::timeout, this, &MainWindow::updateVersionInfo);
+
+    // Connect versionCheckIntervalLineEdit to slot
+    m_versionCheckIntervalLineEdit = ui->versionCheckIntervalLineEdit;
+    connect(m_versionCheckIntervalLineEdit, &QLineEdit::editingFinished, this, &MainWindow::onVersionCheckIntervalLineEditChanged);
 
     // Connect new status page button
     connect(ui->openStatusPageButton, &QPushButton::clicked, this, &MainWindow::openStatusPageButtonClicked);
@@ -1532,6 +1537,13 @@ void MainWindow::saveUiSettings()
     settings->endGroup();
 
     settings->beginGroup("General");
+    if (m_versionCheckIntervalLineEdit) {
+        bool ok;
+        int newInterval = m_versionCheckIntervalLineEdit->text().toInt(&ok);
+        if (ok && newInterval > 0) {
+            m_versionCheckInterval = newInterval;
+        }
+    }
     settings->setValue("VersionCheckInterval", m_versionCheckInterval);
     settings->setValue("FullVersionCheckInterval", m_fullVersionCheckInterval);
     settings->endGroup();
@@ -1582,6 +1594,9 @@ void MainWindow::loadUiSettings()
     settings->beginGroup("General");
     m_versionCheckInterval = settings->value("VersionCheckInterval", 15).toInt();
     m_fullVersionCheckInterval = settings->value("FullVersionCheckInterval", 1440).toInt();
+    if (m_versionCheckIntervalLineEdit) {
+        m_versionCheckIntervalLineEdit->setText(QString::number(m_versionCheckInterval));
+    }
     settings->endGroup();
 
     settings->sync();
@@ -2315,6 +2330,26 @@ void MainWindow::onVersionCheckFinished()
 void MainWindow::onVersionCheckTimerTimeout()
 {
     checkForUpdates();
+}
+
+// ****************************************************************************
+// onVersionCheckIntervalLineEditChanged()
+// ****************************************************************************
+void MainWindow::onVersionCheckIntervalLineEditChanged()
+{
+    bool ok;
+    int newInterval = m_versionCheckIntervalLineEdit->text().toInt(&ok);
+    if (ok && newInterval > 0) {
+        m_versionCheckInterval = newInterval;
+        // Restart the timer with the new interval
+        m_versionCheckTimer->stop();
+        m_versionCheckTimer->start(m_versionCheckInterval * 60 * 1000);
+        updateStatusBar(tr("Version check interval set to %1 minutes.").arg(newInterval));
+    } else {
+        QMessageBox::warning(this, tr("Invalid Input"), tr("Please enter a valid positive number for the version check interval."));
+        // Revert to the last valid value if input is invalid
+        m_versionCheckIntervalLineEdit->setText(QString::number(m_versionCheckInterval));
+    }
 }
 
 // ****************************************************************************
