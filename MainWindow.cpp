@@ -920,7 +920,7 @@ void MainWindow::openLastReportButtonClicked()
         return;
     }
     QStringList filters;
-    filters << "*.zip";
+    filters << "*.html";
     QFileInfoList list = dir.entryInfoList(filters, QDir::Files | QDir::NoSymLinks, QDir::Time | QDir::Reversed);
     if (list.isEmpty()) {
         QMessageBox::information(this, tr("No Reports"), tr("No scan reports found."));
