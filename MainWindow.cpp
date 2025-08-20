@@ -2091,7 +2091,7 @@ void MainWindow::on_scanHistoryTable_cellDoubleClicked(int row, int column)
     }
 
     // The timestamp in the table is formatted as "yyyy-MM-dd hh:mm:ss"
-    // The filename is "yyyy-MM-dd_hh-mm-ss.zip"
+    // The filename is "yyyy-MM-dd_hh-mm-ss.html"
     QString timestampStr = timestampItem->text();
     QDateTime timestamp = QDateTime::fromString(timestampStr, "yyyy-MM-dd hh:mm:ss");
 
@@ -2101,7 +2101,7 @@ void MainWindow::on_scanHistoryTable_cellDoubleClicked(int row, int column)
         return;
     }
 
-    QString reportFileName = timestamp.toString("yyyy-MM-dd_hh-mm-ss") + ".zip";
+    QString reportFileName = timestamp.toString("yyyy-MM-dd_hh-mm-ss") + ".html";
     QString scansDirPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) + "/.calamity/reports/scans";
     QString reportFilePath = scansDirPath + "/" + reportFileName;
 
