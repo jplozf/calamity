@@ -72,7 +72,7 @@ You first have to list all the IPC resources :
 ```bash
 lsipc -m
 ```
-Find the ID for the one which have a KEY with value equals to 0x512dd0f7 :
+Find the ID for the one which have a SIZE of 1B. At my house, the KEY starts always with 0x512, I don't know about you :
 ```bash
 KEY        ID         PERMS OWNER SIZE NATTCH STATUS  CTIME    CPID    LPID COMMAND
 0x00000000 819200 rw----rw-   jpl 7,5M      2 dest    08:12  724027    2585 /opt/Tabby/tabby --type=gpu-process --no-sandbox --crash
