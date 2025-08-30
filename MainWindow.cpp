@@ -1484,6 +1484,9 @@ void MainWindow::handleAddExclusionButtonClicked()
 {
     QString newPath = ui->newExclusionPathLineEdit->text().trimmed();
     if (!newPath.isEmpty() && !exclusionPaths.contains(newPath)) {
+        if (!newPath.endsWith(QDir::separator())) {
+            newPath.append(QDir::separator());
+        }
         exclusionPaths.append(newPath);
         ui->exclusionListWidget->addItem(newPath);
         ui->newExclusionPathLineEdit->clear();
