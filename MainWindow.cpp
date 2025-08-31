@@ -845,7 +845,7 @@ QStringList MainWindow::buildClamscanArguments()
     if (ui->moveInfectedCheckBox->isChecked()) {
         QString quarantinePath = ui->quarantinePathLineEdit->text();
         if (!quarantinePath.isEmpty()) {
-            arguments << "--move=" + quarantinePath;
+            arguments << "--move=\"" + quarantinePath + "\"";
         } else {
             QMessageBox::warning(this, tr("Quarantine Path Missing"), tr("Please specify a quarantine path for moving infected files."));
             // Do not add --move argument if path is empty, and uncheck the box
@@ -876,7 +876,7 @@ QStringList MainWindow::buildClamscanArguments()
 
     // Add exclusion paths
     for (const QString &path : qAsConst(exclusionPaths)) {
-        arguments << "--exclude=" + path;
+        arguments << "--exclude-dir=\"" + path + "\"";
     }
 
     return arguments;
@@ -1289,6 +1289,11 @@ void MainWindow::runScheduledScan()
     }
     if (ui->scheduledRemoveInfectedCheckBox->isChecked()) {
         arguments << "--remove";
+    }
+
+    // Add scheduled exclusion paths
+    for (const QString &path : qAsConst(exclusionPaths)) {
+        arguments << "--exclude-dir=\"" + path + "\"";
     }
     arguments << pathsToScan;
     m_lastScanTargetsDisplay = joinPathsForDisplay(pathsToScan);
