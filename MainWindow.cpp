@@ -876,7 +876,7 @@ QStringList MainWindow::buildClamscanArguments()
 
     // Add exclusion paths
     for (const QString &path : qAsConst(exclusionPaths)) {
-        arguments << "--exclude=\"" + path + "\"";
+        arguments << "--exclude=" + path;
     }
 
     return arguments;
@@ -1293,7 +1293,7 @@ void MainWindow::runScheduledScan()
 
     // Add scheduled exclusion paths
     for (const QString &path : qAsConst(exclusionPaths)) {
-        arguments << "--exclude=\"" + path + "\"";
+        arguments << "--exclude=" + path;
     }
     arguments << pathsToScan;
     m_lastScanTargetsDisplay = joinPathsForDisplay(pathsToScan);
