@@ -1970,7 +1970,7 @@ void MainWindow::onOnlineVersionCheckFinished()
                     tr("Online Signatures Version available : %1 (New version available!)")
                         .arg(onlineVersionStr));
                 trayIcon->showMessage("Calamity",
-                                      tr("New Signatures Version avaialable online."),
+                                      tr("New Signatures Version available online."),
                                       QSystemTrayIcon::Warning,
                                       2000);
                 if (ui->asapUpdateCheckBox->isChecked()) {
