@@ -64,7 +64,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle(QString("Calamity %1.%2-%3").arg(APP_VERSION).arg(GIT_COMMIT_COUNT).arg(GIT_HASH));
     setStyleSheet(
-        "QMainWindow, QWidget, QFrame { background-color: #FADA5E; }"); // Set background color to Naples' yellow for main window and panels
+        "QMainWindow, QWidget, QFrame { background-color: #FADA5E; color: #343434; }"); // Set background color to Naples' yellow for main window and panels
 
     // Initialize LED pixmaps
     ledGreenPixmap = QPixmap(":/icons/led_green.png");
