@@ -82,7 +82,6 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 
-# Added by Gemini CLI
+# More few
 calamity
-libs/
 moc_predefs.h
