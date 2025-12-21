@@ -58,7 +58,6 @@ MainWindow::MainWindow(QWidget *parent)
     , clamavVersionLabel(nullptr)
     , signatureVersionLabel(nullptr)
     , scanStatusLed(nullptr)
-    , smtpClient(nullptr) // Initialize smtpClient
     , m_versionCheckIntervalLineEdit(nullptr)
 {
     ui->setupUi(this);
@@ -149,11 +148,6 @@ MainWindow::MainWindow(QWidget *parent)
     // Connect fileDropped signal from custom QTextEdit
     connect(ui->outputLog, &ScanOutputTextEdit::fileDropped, this, &MainWindow::handleFileDropped);
 
-    // Connect email settings signals to slots
-    connect(ui->emailReportCheckBox, &QCheckBox::toggled, this, &MainWindow::onEmailReportCheckBox_toggled);
-    connect(ui->saveEmailSettingsButton, &QPushButton::clicked, this, &MainWindow::onSaveEmailSettingsButton_clicked);
-    connect(ui->testEmailButton, &QPushButton::clicked, this, &MainWindow::onTestEmailButton_clicked);
-
     m_updateCheckProcess = new QProcess(this);
     connect(m_updateCheckProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &MainWindow::onVersionCheckFinished);
     checkForUpdates();
@@ -200,7 +194,6 @@ MainWindow::MainWindow(QWidget *parent)
     loadScheduleSettings();
     setupSchedulers();
     loadUiSettings(); // Load UI settings on startup
-    loadEmailSettings(); // Load email settings on startup
     m_versionCheckTimer->start(m_fullVersionCheckInterval * 60 * 1000); // Start full check timer
     m_updateVersionTimer->start(m_versionCheckInterval * 60 * 1000); // Start timer with loaded value
     moveInfectedCheckBox_toggled(ui->moveInfectedCheckBox->isChecked()); // Update quarantine path line edit state based on loaded setting
@@ -337,7 +330,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     saveUiSettings(); // Save UI settings before closing
     saveExclusionSettings(); // Save exclusion settings before closing
     saveScanHistory(); // Save scan history before closing
-    saveEmailSettings(); // Save email settings before closing
     if (trayIcon->isVisible()) {
         hide();
         event->ignore();
@@ -1621,38 +1613,6 @@ void MainWindow::loadUiSettings()
 }
 
 // ****************************************************************************
-// loadEmailSettings()
-// ****************************************************************************
-void MainWindow::loadEmailSettings()
-{
-    settings->beginGroup("Email");
-    ui->emailReportCheckBox->setChecked(settings->value("Enabled", false).toBool());
-    ui->smtpServerLineEdit->setText(settings->value("SmtpServer", "").toString());
-    ui->smtpPortLineEdit->setText(settings->value("SmtpPort", 587).toString()); // Default to 587 for TLS
-    ui->smtpUsernameLineEdit->setText(settings->value("SmtpUsername", "").toString());
-    ui->smtpPasswordLineEdit->setText(settings->value("SmtpPassword", "").toString());
-    ui->recipientLineEdit->setText(settings->value("Recipient", "").toString());
-    settings->endGroup();
-}
-
-// ****************************************************************************
-// saveEmailSettings()
-// ****************************************************************************
-void MainWindow::saveEmailSettings()
-{
-    settings->beginGroup("Email");
-    settings->setValue("Enabled", ui->emailReportCheckBox->isChecked());
-    settings->setValue("SmtpServer", ui->smtpServerLineEdit->text());
-    settings->setValue("SmtpPort", ui->smtpPortLineEdit->text().toInt());
-    settings->setValue("SmtpUsername", ui->smtpUsernameLineEdit->text());
-    settings->setValue("SmtpPassword", ui->smtpPasswordLineEdit->text());
-    settings->setValue("Recipient", ui->recipientLineEdit->text());
-    settings->endGroup();
-    settings->sync();
-    updateStatusBar("Email settings saved.");
-}
-
-// ****************************************************************************
 // loadExclusionSettings()
 // ****************************************************************************
 void MainWindow::loadExclusionSettings()
@@ -2135,203 +2095,6 @@ void MainWindow::handleFileDropped(const QString &path)
     ui->outputLog->append(QString("Scanning: %1").arg(joinPathsForDisplay(parsePathsText(ui->pathLineEdit->text()))));
     QApplication::processEvents(); // Force UI update
     scanButton_clicked();
-}
-
-// ****************************************************************************
-// onEmailReportCheckBox_toggled()
-// ****************************************************************************
-void MainWindow::onEmailReportCheckBox_toggled(bool checked)
-{
-    // Enable/disable email settings fields based on checkbox state
-    ui->smtpServerLineEdit->setEnabled(checked);
-    ui->smtpPortLineEdit->setEnabled(checked);
-    ui->smtpUsernameLineEdit->setEnabled(checked);
-    ui->smtpPasswordLineEdit->setEnabled(checked);
-    ui->recipientLineEdit->setEnabled(checked);
-    ui->saveEmailSettingsButton->setEnabled(checked);
-    ui->testEmailButton->setEnabled(checked);
-}
-
-// ****************************************************************************
-// onSaveEmailSettingsButton_clicked()
-// ****************************************************************************
-void MainWindow::onSaveEmailSettingsButton_clicked()
-{
-    saveEmailSettings();
-}
-
-// ****************************************************************************
-// onTestEmailButton_clicked()
-// ****************************************************************************
-void MainWindow::onTestEmailButton_clicked()
-{
-    QString smtpServer = ui->smtpServerLineEdit->text();
-    int smtpPort = ui->smtpPortLineEdit->text().toInt();
-    QString smtpUsername = ui->smtpUsernameLineEdit->text();
-    QString smtpPassword = ui->smtpPasswordLineEdit->text();
-    QString recipient = ui->recipientLineEdit->text();
-
-    if (smtpServer.isEmpty() || smtpPort == 0 || recipient.isEmpty()) {
-        QMessageBox::warning(this, tr("Email Settings Error"), tr("Please fill in SMTP Server, Port, and Recipient fields."));
-        return;
-    }
-
-    ui->testEmailButton->setEnabled(false);
-    updateStatusBar("Sending test email...");
-
-    // Clean up previous client if exists
-    if (smtpClient) {
-        smtpClient->deleteLater();
-    }
-
-    smtpClient = new SmtpClient(smtpServer, smtpPort, SmtpClient::TlsConnection);
-
-    connect(smtpClient, &SmtpClient::connected, this, &MainWindow::handleSmtpConnected);
-    connect(smtpClient, &SmtpClient::authenticated, this, &MainWindow::handleSmtpAuthenticated);
-    connect(smtpClient, &SmtpClient::mailSent, this, &MainWindow::handleSmtpMailSent);
-    connect(smtpClient, QOverload<SmtpClient::SmtpError>::of(&SmtpClient::error), this, &MainWindow::handleSmtpError);
-    connect(smtpClient, &SmtpClient::disconnected, this, &MainWindow::handleSmtpDisconnected);
-
-    smtpClient->connectToHost();
-}
-
-// ****************************************************************************
-// handleSmtpConnected()
-// ****************************************************************************
-void MainWindow::handleSmtpConnected()
-{
-    qDebug() << "SMTP Connected.";
-    updateStatusBar("SMTP Connected. Attempting to log in...");
-    QString smtpUsername = ui->smtpUsernameLineEdit->text();
-    QString smtpPassword = ui->smtpPasswordLineEdit->text();
-
-    if (!smtpUsername.isEmpty() && !smtpPassword.isEmpty()) {
-        smtpClient->login(smtpUsername, smtpPassword);
-    } else {
-        // If no username/password, try sending without authentication (might fail for most servers)
-        qDebug() << "No SMTP username/password provided. Attempting to send without authentication.";
-        MimeMessage message;
-        EmailAddress sender(ui->smtpUsernameLineEdit->text().isEmpty() ? "test@example.com" : ui->smtpUsernameLineEdit->text(), "Calamity Test");
-        message.setSender(sender);
-        EmailAddress recipient(ui->recipientLineEdit->text(), "Recipient");
-        message.addRecipient(recipient);
-        message.setSubject("Calamity Test Email");
-        MimeText text;
-        text.setText("This is a test email sent from Calamity.");
-        message.addPart(&text);
-        smtpClient->sendMail(message);
-    }
-}
-
-// ****************************************************************************
-// handleSmtpAuthenticated()
-// ****************************************************************************
-void MainWindow::handleSmtpAuthenticated()
-{
-    qDebug() << "SMTP Authenticated.";
-    updateStatusBar("SMTP Authenticated. Sending test email...");
-    MimeMessage message;
-    EmailAddress sender(ui->smtpUsernameLineEdit->text(), "Calamity Test");
-    message.setSender(sender);
-    EmailAddress recipient(ui->recipientLineEdit->text(), "Recipient");
-    message.addRecipient(recipient);
-    message.setSubject("Calamity Test Email");
-    MimeText text;
-    text.setText("This is a test email sent from Calamity.");
-    message.addPart(&text);
-    smtpClient->sendMail(message);
-}
-
-// ****************************************************************************
-// handleSmtpMailSent()
-// ****************************************************************************
-void MainWindow::handleSmtpMailSent()
-{
-    qDebug() << "SMTP Mail Sent.";
-    QMessageBox::information(this, tr("Test Email Sent"), tr("Test email sent successfully!"));
-    updateStatusBar("Test email sent.");
-    smtpClient->quit();
-}
-
-// ****************************************************************************
-// handleSmtpError()
-// ****************************************************************************
-void MainWindow::handleSmtpError(SmtpClient::SmtpError e)
-{
-    QString errorString = SmtpClient::string(e);
-    qWarning() << "SMTP Error:" << errorString;
-    QMessageBox::critical(this, tr("Email Error"), tr("Failed to send test email: %1").arg(errorString));
-    updateStatusBar(QString("Email error: %1").arg(errorString));
-    smtpClient->quit();
-}
-
-// ****************************************************************************
-// handleSmtpDisconnected()
-// ****************************************************************************
-void MainWindow::handleSmtpDisconnected()
-{
-    qDebug() << "SMTP Disconnected.";
-    ui->testEmailButton->setEnabled(true);
-    if (smtpClient) {
-        smtpClient->deleteLater();
-        smtpClient = nullptr;
-    }
-    updateStatusBar("Ready");
-}
-
-// ****************************************************************************
-// sendEmailReport()
-// ****************************************************************************
-void MainWindow::sendEmailReport(const QString &reportPath)
-{
-    QString smtpServer = ui->smtpServerLineEdit->text();
-    int smtpPort = ui->smtpPortLineEdit->text().toInt();
-    QString smtpUsername = ui->smtpUsernameLineEdit->text();
-    QString smtpPassword = ui->smtpPasswordLineEdit->text();
-    QString recipient = ui->recipientLineEdit->text();
-
-    if (smtpServer.isEmpty() || smtpPort == 0 || recipient.isEmpty()) {
-        qWarning() << "Email settings incomplete. Cannot send report.";
-        return;
-    }
-
-    if (!QFile::exists(reportPath)) {
-        qWarning() << "Report file does not exist. Cannot send report:" << reportPath;
-        return;
-    }
-
-    // Clean up previous client if exists
-    if (smtpClient) {
-        smtpClient->deleteLater();
-    }
-
-    smtpClient = new SmtpClient(smtpServer, smtpPort, SmtpClient::TlsConnection);
-
-    connect(smtpClient, &SmtpClient::connected, this, &MainWindow::handleSmtpConnected);
-    connect(smtpClient, &SmtpClient::authenticated, this, &MainWindow::handleSmtpAuthenticated);
-    connect(smtpClient, &SmtpClient::mailSent, this, &MainWindow::handleSmtpMailSent);
-    connect(smtpClient, QOverload<SmtpClient::SmtpError>::of(&SmtpClient::error), this, &MainWindow::handleSmtpError);
-    connect(smtpClient, &SmtpClient::disconnected, this, &MainWindow::handleSmtpDisconnected);
-
-    MimeMessage message;
-    EmailAddress sender(smtpUsername, "Calamity Report");
-    message.setSender(sender);
-    EmailAddress to(recipient, "Report Recipient");
-    message.addRecipient(to);
-
-    message.setSubject("Calamity Scan Report - " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm"));
-
-    MimeText *text = new MimeText();
-    text->setText("Please find the attached Calamity scan report.");
-    message.addPart(text);
-
-    MimeAttachment *attachment = new MimeAttachment(new QFile(reportPath));
-    message.addPart(attachment);
-
-    smtpClient->connectToHost();
-    smtpClient->sendMail(message);
-
-    // message and its parts will be deleted by smtpClient
 }
 
 // ****************************************************************************

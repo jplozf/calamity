@@ -99,7 +99,7 @@ ipcrm -m 983084
 *   Improve multi paths scans.
 *   Add audible alerts.
 *   Improve scheduling.
-*   Finalize report by mail.
+*   Add report by mail.
 
 ## License
 
