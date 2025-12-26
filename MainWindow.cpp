@@ -540,6 +540,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
             populateUpdateHistoryTable();
         }
         updateStatusBar("Update finished.");
+        doRunAfterScheduledUpdate();
         return;
     }
 
@@ -756,6 +757,7 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
                               2000);
     }
     updateStatusBar(statusMessage);
+    doRunAfterScheduledScan();
 
     // Add to scan history
     QString scannedPath = m_lastScanTargetsDisplay.isEmpty() ? joinPathsForDisplay(parsePathsText(ui->pathLineEdit->text())) : m_lastScanTargetsDisplay;
@@ -768,8 +770,27 @@ void MainWindow::clamscanFinished(int exitCode, QProcess::ExitStatus exitStatus)
     ui->stopButton->setEnabled(false);
 }
 
+// ****************************************************************************
+// doRunAfterScheduledScan()
+// ****************************************************************************
+void MainWindow::doRunAfterScheduledScan()
+{
+    if (ui->txtRunAfterSchedulingScan->text() != "") {
+        QProcess *process = new QProcess(this);
+        process->start(ui->txtRunAfterSchedulingScan->text());
+    }
+}
 
-
+// ****************************************************************************
+// doRunAfterScheduledUpdate()
+// ****************************************************************************
+void MainWindow::doRunAfterScheduledUpdate()
+{
+    if (ui->txtRunAfterSchedulingUpdate->text() != "") {
+        QProcess *process = new QProcess(this);
+        process->start(ui->txtRunAfterSchedulingUpdate->text());
+    }
+}
 
 // ****************************************************************************
 // clamscanErrorOccurred()
@@ -1555,6 +1576,8 @@ void MainWindow::saveUiSettings()
     settings->setValue("VersionCheckInterval", m_versionCheckInterval);
     settings->setValue("FullVersionCheckInterval", m_fullVersionCheckInterval);
     settings->setValue("AsapUpdate", ui->asapUpdateCheckBox->isChecked());
+    settings->setValue("RunAfterScheduledScan", ui->txtRunAfterSchedulingScan->text());
+    settings->setValue("RunAfterScheduledUpdate", ui->txtRunAfterSchedulingUpdate->text());
     settings->endGroup();
 
     settings->sync();
@@ -1607,6 +1630,9 @@ void MainWindow::loadUiSettings()
         m_versionCheckIntervalLineEdit->setText(QString::number(m_versionCheckInterval));
     }
     ui->asapUpdateCheckBox->setChecked(settings->value("AsapUpdate", false).toBool());
+    ui->txtRunAfterSchedulingScan->setText(settings->value("RunAfterScheduledScan", "").toString());
+    ui->txtRunAfterSchedulingUpdate->setText(
+        settings->value("RunAfterScheduledUpdate", "").toString());
     settings->endGroup();
 
     settings->sync();
@@ -2380,9 +2406,6 @@ void MainWindow::on_asapUpdateCheckBox_stateChanged(int state)
     }
 }
 
-// ****************************************************************************
-// timeConversion()
-// ****************************************************************************
 // ****************************************************************************
 // timeConversion()
 // ****************************************************************************

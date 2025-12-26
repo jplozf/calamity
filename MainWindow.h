@@ -170,6 +170,8 @@ private:
     void generateUpdateReport(const QByteArray &logData);
     void populateUpdateHistoryTable();
     void generateStatusPage();
+    void doRunAfterScheduledScan();
+    void doRunAfterScheduledUpdate();
     QString m_lastUpdateReportPath;
 
     // Scan History related slots
