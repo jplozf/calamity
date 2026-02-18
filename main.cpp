@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
     a.setWindowIcon(QIcon(":/icons/app_icon.png")); // Set your application icon here
     MainWindow w;
-    w.show();
+    // w.show();
     return a.exec();
 }
 

@@ -174,6 +174,7 @@ MainWindow::MainWindow(QWidget *parent)
     updateStatusBar("Ready");
 
     createTrayIcon();
+    this->hide();
 
     // Setup and load scheduling
     scanSchedulerTimer = new QTimer(this);
